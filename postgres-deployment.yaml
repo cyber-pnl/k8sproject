@@ -4,7 +4,7 @@ kind: Deployment
 metadata:
   name: postgres
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: postgres
@@ -16,10 +16,8 @@ spec:
       containers:
         - name: postgres
           image: postgres:15
-          env:
-            - name: POSTGRES_PASSWORD
-              value: postgres
-            - name: POSTGRES_DB
-              value: testdb
           ports:
             - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: postgres-secret

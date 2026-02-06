@@ -8,9 +8,9 @@ app.use(express.json());
 // PostgreSQL
 const pgClient = new Pool({
   host: "postgres",
-  user: "postgres",
-  password: "postgres",
-  database: "testdb",
+  user: "process.env.POSTGRES_USER",
+  password: "process.env.POSTGRES_PASSWORD",
+  database: "process.env.POSTGRES_DB",
 });
 
 // Redis
@@ -23,7 +23,7 @@ const redisClient = redis.createClient({
 redisClient.connect();
 
 app.get("/", (req, res) => {
-  res.send("Multi-container app running 🚀");
+  res.send("Multi-container app running k8s project");
 });
 
 app.get("/users", async (req, res) => {
