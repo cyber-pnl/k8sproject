@@ -186,8 +186,6 @@ kubectl describe pod <pod-name>
 ```bash
 kubectl delete -f <file>
 kubectl apply -f <file>
-```
 
-```
 
 
