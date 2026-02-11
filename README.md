@@ -1,6 +1,3 @@
-Parfait ! Voici ton **README complet prêt à copier-coller** dans un seul fichier Markdown :
-
-````markdown
 # Projet Kubernetes — Application Multi-Container
 
 Ce dépôt contient une application Node.js (Express) avec PostgreSQL et Redis, pensée comme projet pédagogique pour apprendre Kubernetes.  
