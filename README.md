@@ -139,8 +139,9 @@ kubectl apply -f postgres-headless-service.yaml
 kubectl apply -f postgres-replicaset.yaml
 kubectl apply -f redis-replicaset.yaml
 kubectl apply -f node-replicaset.yaml
-kubectl apply -f node-service.yaml  # 
+kubectl apply -f node-service.yaml  
 kubectl apply -f redis-service.yaml 
+kubectl apply -f scan-node-app-cronjob.yaml
 ```
 
 ### Vérifier les pods et réplicas
