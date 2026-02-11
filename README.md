@@ -31,8 +31,10 @@ L'objectif : construire l'image Docker, déployer les composants dans Kubernetes
 
 ```bash
 cd app
-npm install
-node index.js
+npm init -y
+npm install express pg redis
+npm install bcrypt
+
 ````
 
 ---
