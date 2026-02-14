@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Kubernetes App</title>
+</head>
+<body>
+  <h1>Bienvenue <%= user %> </h1>
+
+  <h2>Architecture</h2>
+  <ul>
+    <li>Node.js</li>
+    <li>PostgreSQL (StatefulSet)</li>
+    <li>Redis (ReplicaSet)</li>
+    <li>Kubernetes</li>
+  </ul>
+
+  <h2>Sécurité</h2>
+  <p>
+    - bcrypt pour hash password  
+    - Kubernetes Secrets  
+    - Redis cache TTL  
+  </p>
+
+  <a href="/users">Voir utilisateurs</a>
+</body>
+</html>

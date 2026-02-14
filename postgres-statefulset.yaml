@@ -3,7 +3,7 @@ kind: StatefulSet
 metadata:
   name: postgres
 spec:
-  serviceName: "postgres-headless"  # Headless Service pour StatefulSet
+  serviceName: "postgres"  # Headless Service pour StatefulSet
   replicas: 2
   selector:
     matchLabels:
@@ -20,7 +20,7 @@ spec:
             - containerPort: 5432
           envFrom:
             - secretRef:
-                name: postgres-secret   #  utilise le secret déjà créé
+                name: postgres-secret   
           volumeMounts:
             - name: postgres-data
               mountPath: /var/lib/postgresql/data

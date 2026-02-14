@@ -33,6 +33,8 @@ L'objectif : construire l'image Docker, déployer les composants dans Kubernetes
 cd app
 npm init -y
 npm install express pg redis
+npm install ejs
+npm install express-session
 npm install bcrypt
 
 ````
@@ -45,15 +47,19 @@ npm install bcrypt
 
 ```bash
 eval $(minikube docker-env)
-docker build -t node-app:latest ./app
+docker build -t node-app .
+
 ```
 
 ### Avec Kind ou Docker local :
 
+Dans le fichier où il ya le dockerfile
+
 ```bash
-docker build -t node-app:latest ./app
+docker build -t node-app .
+
 # si Kind :
-kind load docker-image node-app:latest --name kind
+kind load docker-image node-app . --name kind
 ```
 
 ---
@@ -130,15 +136,18 @@ kubectl create secret generic postgres-secret \
   --from-literal=POSTGRES_USER=admin \
   --from-literal=POSTGRES_PASSWORD=changeme \
   --from-literal=POSTGRES_DB=mydb
+
+  kubectl create secret generic app-secret \
+  --from-literal=SESSION_SECRET=ma_clef_ultra_complexe_123
 ```
 
 ### Appliquer les manifests Kubernetes
 
 ```bash
 kubectl apply -f postgres-headless-service.yaml
-kubectl apply -f postgres-replicaset.yaml
-kubectl apply -f redis-replicaset.yaml
-kubectl apply -f node-replicaset.yaml
+kubectl apply -f postgres-statefulset.yaml
+kubectl apply -f redis-deployment.yaml
+kubectl apply -f node-deployments.yaml
 kubectl apply -f node-service.yaml  
 kubectl apply -f redis-service.yaml 
 kubectl apply -f scan-node-app-cronjob.yaml

@@ -13,6 +13,6 @@ spec:
             image: aquasec/trivy:latest
             args:
               - image
-              - node-app:latest
+              - node-app
           restartPolicy: Never
       backoffLimit: 2
