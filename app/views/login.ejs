@@ -1,21 +1,104 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-  <title>Connexion</title>
+  <meta charset="UTF-8">
+  <title>Connexion - Kubernetes App</title>
+  <style>
+    /* ===========================
+       Global
+       =========================== */
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f7f9fc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      color: #1f2937;
+    }
+
+    /* ===========================
+       Container du formulaire
+       =========================== */
+    .login-container {
+      background-color: #fff;
+      padding: 2rem 3rem;
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+      width: 350px;
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 1.5rem;
+      color: #2563eb;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.8rem;
+      margin-bottom: 1rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+
+    input:focus {
+      border-color: #3b82f6;
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(59,130,246,0.2);
+    }
+
+    button {
+      width: 100%;
+      padding: 0.8rem;
+      background-color: #16a34a;
+      border: none;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background-color: #15803d;
+    }
+
+    p.error {
+      color: #dc2626;
+      margin-top: 1rem;
+      font-weight: bold;
+    }
+
+    footer {
+      margin-top: 1.5rem;
+      font-size: 0.8rem;
+      color: #6b7280;
+    }
+  </style>
 </head>
 <body>
-  <h2>Connexion</h2>
 
-  <form method="POST" action="/login">
-    <input type="text" name="username" placeholder="Username" required />
-    <br /><br />
-    <input type="password" name="password" placeholder="Password" required />
-    <br /><br />
-    <button type="submit">Login</button>
-  </form>
+  <div class="login-container">
+    <h2>Connexion</h2>
 
-  <% if (error) { %>
-    <p style="color:red">Identifiants invalides</p>
-  <% } %>
+    <form method="POST" action="/login">
+      <input type="text" name="username" placeholder="Nom d'utilisateur" required />
+      <input type="password" name="password" placeholder="Mot de passe" required />
+      <button type="submit">Se connecter</button>
+    </form>
+
+    <% if (error) { %>
+      <p class="error">Identifiants invalides</p>
+    <% } %>
+
+    <footer>
+      Projet Kubernetes DevOps
+    </footer>
+  </div>
+
 </body>
 </html>
