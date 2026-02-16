@@ -35,6 +35,7 @@ npm init -y
 npm install express pg redis
 npm install ejs
 npm install express-session
+npm install validator
 npm install bcrypt
 
 ````
@@ -46,6 +47,7 @@ npm install bcrypt
 ### Avec Minikube (recommandé pour dev) :
 
 ```bash
+cd app
 eval $(minikube docker-env)
 docker build -t node-app .
 
@@ -144,13 +146,8 @@ kubectl create secret generic postgres-secret \
 ### Appliquer les manifests Kubernetes
 
 ```bash
-kubectl apply -f postgres-headless-service.yaml
-kubectl apply -f postgres-statefulset.yaml
-kubectl apply -f node-deployments.yaml
-kubectl apply -f node-service.yaml  
-kubectl apply -f redis-deployment.yaml
-kubectl apply -f redis-service.yaml 
-kubectl apply -f scan-node-app-cronjob.yaml
+kubectl apply -f project/
+
 ```
 
 ### Vérifier les pods et réplicas
