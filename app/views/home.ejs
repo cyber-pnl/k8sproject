@@ -1,139 +1,89 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <title>Kubernetes App</title>
-  <style>
-    /* ===========================
-       Global
-       =========================== */
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f7f9fc;
-      margin: 0;
-      padding: 0;
-      color: #1f2937;
-    }
+  <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+      <meta charset="UTF-8" />
+      <title>Kubernetes Multi-Container App</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          background: #0f172a;
+          color: #e5e7eb;
+          padding: 40px;
+        }
+        .container {
+          max-width: 900px;
+          margin: auto;
+        }
+        h1 {
+          color: #38bdf8;
+        }
+        .card {
+          background: #020617;
+          padding: 20px;
+          border-radius: 10px;
+          margin-top: 20px;
+        }
+        .badge {
+          display: inline-block;
+          background: #22c55e;
+          color: #022c22;
+          padding: 6px 12px;
+          border-radius: 6px;
+          font-weight: bold;
+          margin-bottom: 10px;
+        }
+        ul {
+          margin-top: 10px;
+        }
+      </style>
+    </head>
 
-    a {
-      text-decoration: none;
-      color: #2563eb;
-    }
+    <body>
+      <div class="container">
+        <span class="badge">Projet DevOps – Kubernetes</span>
+        <h1>Bienvenue <%= user %> </h1>
 
-    /* ===========================
-       Header
-       =========================== */
-    header {
-      background-color: #2d3748;
-      color: #fff;
-      padding: 2rem 1rem;
-      text-align: center;
-    }
+        <div class="card">
+          <h2> Kubernetes – Présentation</h2>
+          <p>
+            Kubernetes est une plateforme open-source d’orchestration de conteneurs.
+            Elle permet d’automatiser le déploiement, la montée en charge et la gestion
+            des applications conteneurisées.
+          </p>
+          <ul>
+            <li>Orchestration de conteneurs Docker</li>
+            <li>Haute disponibilité</li>
+            <li>Découverte réseau automatique</li>
+            <li>Gestion des secrets et configurations</li>
+          </ul>
+        </div>
 
-    header h1 {
-      margin: 0;
-      font-size: 2.2rem;
-    }
+        <div class="card">
+          <h2>Architecture de l’application</h2>
+          <ul>
+            <li><b>Node.js (Express)</b> : API Backend</li>
+            <li><b>PostgreSQL</b> : Base de données relationnelle</li>
+            <li><b>Redis</b> : Cache pour améliorer les performances</li>
+            <li><b>Kubernetes</b> : Orchestration multi-containers</li>
+          </ul>
+        </div>
 
-    header p {
-      font-size: 1rem;
-      margin-top: 0.5rem;
-      color: #a0aec0;
-    }
+        <div class="card">
+          <h2>Sécurité</h2>
+          <p>
+            Les identifiants sensibles (PostgreSQL) sont injectés via
+            <b>Kubernetes Secrets</b>. Aucun mot de passe n’est stocké
+            dans le code source ou sur GitHub.
+          </p>
+        </div>
 
-    /* ===========================
-       Container
-       =========================== */
-    .container {
-      max-width: 900px;
-      margin: 2rem auto;
-      padding: 1rem 2rem;
-      background-color: #fff;
-      border-radius: 12px;
-      box-shadow: 0 6px 15px rgba(0,0,0,0.05);
-    }
-
-    h2 {
-      color: #1d4ed8;
-      border-bottom: 2px solid #93c5fd;
-      padding-bottom: 0.3rem;
-    }
-
-    ul {
-      list-style: none;
-      padding-left: 0;
-    }
-
-    ul li {
-      background: #e0f2fe;
-      margin: 0.5rem 0;
-      padding: 0.6rem 1rem;
-      border-radius: 6px;
-      color: #0369a1;
-      font-weight: 500;
-    }
-
-    p {
-      background: #fef3c7;
-      padding: 1rem;
-      border-left: 4px solid #fbbf24;
-      border-radius: 6px;
-      margin: 1rem 0;
-      color: #92400e;
-    }
-
-    .btn {
-      display: inline-block;
-      padding: 0.6rem 1.2rem;
-      background-color: #16a34a;
-      color: #fff;
-      font-weight: bold;
-      border-radius: 6px;
-      transition: background 0.2s;
-      margin-top: 1rem;
-    }
-
-    .btn:hover {
-      background-color: #15803d;
-    }
-
-    footer {
-      text-align: center;
-      margin: 3rem 0 1rem 0;
-      color: #6b7280;
-      font-size: 0.9rem;
-    }
-  </style>
-</head>
-<body>
-
-  <header>
-    <h1>Bienvenue <%= user %> </h1>
-    <p>Projet pédagogique Kubernetes — Node.js / PostgreSQL / Redis</p>
-  </header>
-
-  <div class="container">
-    <h2>Architecture</h2>
-    <ul>
-      <li>Node.js (Express)</li>
-      <li>PostgreSQL (StatefulSet)</li>
-      <li>Redis (ReplicaSet)</li>
-      <li>Kubernetes (Orchestration)</li>
-    </ul>
-
-    <h2>Sécurité</h2>
-    <p>
-      - Mots de passe hashés avec bcrypt<br>
-      - Secrets gérés via Kubernetes Secrets<br>
-      - Cache Redis avec TTL pour optimiser les performances
-    </p>
-
-    <a class="btn" href="/users">Voir les utilisateurs</a>
-  </div>
-
-  <footer>
-    &copy; 2026 - Projet Kubernetes DevOps
-  </footer>
-
-</body>
-</html>
+        <div class="card">
+          <h2> API disponibles</h2>
+          <ul>
+            <li><code>GET /</code> – Page de présentation</li>
+            <li><code>GET /users</code> – Liste des utilisateurs (avec cache Redis)</li>
+          </ul>
+        </div>
+      </div>
+    </body>
+    </html>
