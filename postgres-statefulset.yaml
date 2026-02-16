@@ -3,8 +3,8 @@ kind: StatefulSet
 metadata:
   name: postgres
 spec:
-  serviceName: "postgres"  # Headless Service pour StatefulSet
-  replicas: 2
+  serviceName: "postgres"  
+  replicas: 1
   selector:
     matchLabels:
       app: postgres
