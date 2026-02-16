@@ -12,6 +12,9 @@
   "dependencies": {
     "express": "^5.2.1",
     "pg": "^8.18.0",
-    "redis": "^5.10.0"
+    "redis": "^5.10.0",
+    "bcrypt": "^6.0.0",
+    "ejs": "^4.0.1",
+    "express-session": "^1.19.0"
   }
 }
