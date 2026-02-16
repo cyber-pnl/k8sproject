@@ -7,8 +7,25 @@ const pgClient = new Pool({
   database: process.env.POSTGRES_DB,
 });
 
-pgClient.connect()
-  .then(() => console.log("PostgreSQL connected"))
-  .catch(err => console.error("Postgres error:", err));
+async function initDB() {
+  try {
+    await pgClient.query("SELECT 1");
+    console.log("PostgreSQL connected");
+
+    await pgClient.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(100) UNIQUE NOT NULL,
+        password TEXT NOT NULL
+      );
+    `);
+
+    console.log("Users table ready");
+  } catch (err) {
+    console.error("PostgreSQL init error:", err);
+  }
+}
+
+initDB();
 
 module.exports = pgClient;

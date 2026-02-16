@@ -133,9 +133,9 @@ Nous utilisons **ReplicaSet** pour les services stateless et **StatefulSet** pou
 
 ```bash
 kubectl create secret generic postgres-secret \
-  --from-literal=POSTGRES_USER=admin \
-  --from-literal=POSTGRES_PASSWORD=changeme \
-  --from-literal=POSTGRES_DB=mydb
+  --from-literal=POSTGRES_USER=postgres \
+  --from-literal=POSTGRES_PASSWORD=postgres \
+  --from-literal=POSTGRES_DB=testdb
 
   kubectl create secret generic app-secret \
   --from-literal=SESSION_SECRET=ma_clef_ultra_complexe_123
@@ -146,9 +146,9 @@ kubectl create secret generic postgres-secret \
 ```bash
 kubectl apply -f postgres-headless-service.yaml
 kubectl apply -f postgres-statefulset.yaml
-kubectl apply -f redis-deployment.yaml
 kubectl apply -f node-deployments.yaml
 kubectl apply -f node-service.yaml  
+kubectl apply -f redis-deployment.yaml
 kubectl apply -f redis-service.yaml 
 kubectl apply -f scan-node-app-cronjob.yaml
 ```
