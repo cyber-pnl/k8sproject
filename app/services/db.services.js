@@ -26,6 +26,4 @@ async function initDB() {
   }
 }
 
-initDB();
-
-module.exports = pgClient;
+module.exports = { pgClient, initDB };

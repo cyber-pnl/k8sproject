@@ -3,7 +3,7 @@ kind: StatefulSet
 metadata:
   name: postgres
 spec:
-  serviceName: "postgres"  
+  serviceName: postgres
   replicas: 1
   selector:
     matchLabels:
@@ -20,21 +20,19 @@ spec:
             - containerPort: 5432
           envFrom:
             - secretRef:
-                name: postgres-secret   
+                name: postgres-secret
           volumeMounts:
-            - name: postgres-data
+            - name: postgres-storage
               mountPath: /var/lib/postgresql/data
-          resources:
-            requests:
-              cpu: "250m"
-              memory: "256Mi"
-            limits:
-              cpu: "1"
-              memory: "512Mi"
-
+            - name: init-script
+              mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        - name: init-script
+          configMap:
+            name: postgres-init-script
   volumeClaimTemplates:
     - metadata:
-        name: postgres-data
+        name: postgres-storage
       spec:
         accessModes: ["ReadWriteOnce"]
         resources:

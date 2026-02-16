@@ -2,7 +2,7 @@ const express = require("express");
 const bcrypt = require("bcrypt");
 const router = express.Router();
 
-const pgClient = require("../services/db.services");
+const { pgClient } = require("../services/db.services");
 
 /**
  * PAGE LOGIN
