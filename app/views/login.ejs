@@ -85,14 +85,40 @@
   <div class="login-container">
     <h2>Connexion</h2>
 
-    <form method="POST" action="/login">
-      <input type="text" name="username" placeholder="Nom d'utilisateur" required />
-      <input type="password" name="password" placeholder="Mot de passe" required />
+    <form method="POST" action="/login" id="loginForm">
+      <input 
+        type="text" 
+        name="username" 
+        placeholder="Nom d'utilisateur" 
+        required 
+        minlength="3"
+        maxlength="20"
+        title="Entre 3 et 20 caractères"
+      />
+      <input 
+        type="password" 
+        name="password"
+        placeholder="Mot de passe"
+        required
+        minlength="8"
+        pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*\W).+"
+        title="Minimum 8 caractères, 1 majuscule, 1 minuscule, 1 chiffre, 1 symbole"
+      />
       <button type="submit">Se connecter</button>
     </form>
 
-    <% if (error) { %>
-      <p class="error">Identifiants invalides</p>
+    <% if (error === "invalid_username") { %>
+      <p class="error">Nom d'utilisateur invalide (3-20 caractères)</p>
+    <% } %>
+
+    <% if (error === "weak_password") { %>
+      <p class="error">
+        Mot de passe trop faible (8 caractères minimum, majuscule, minuscule, chiffre, symbole)
+      </p>
+    <% } %>
+
+    <% if (error === "invalid_credentials") { %>
+      <p class="error">Identifiants incorrects</p>
     <% } %>
 
     <footer>
