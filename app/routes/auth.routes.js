@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const router = express.Router();
 
 const { pgClient } = require("../services/db.services");
+const { isAdmin } = require("../middlewares/auth.middleware");
 
 /**
  * PAGE LOGIN
@@ -46,7 +47,10 @@ router.post("/login", async (req, res) => {
     }
 
     // Session
-    req.session.user = user.username;
+    req.session.user = {
+    username: user.username,
+    role: user.role,
+   };
 
     res.redirect("/");
   } catch (err) {
@@ -58,7 +62,7 @@ router.post("/login", async (req, res) => {
 /**
  * PAGE HOME
  */
-router.get("/", (req, res) => {
+router.get("/users", isAdmin, async (req, res) => {
   if (!req.session.user) {
     return res.redirect("/login");
   }
