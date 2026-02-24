@@ -1,88 +1,433 @@
-  <!DOCTYPE html>
-    <html lang="fr">
-    <head>
-      <meta charset="UTF-8" />
-      <title>Kubernetes Multi-Container App</title>
-      <style>
-        body {
-          font-family: Arial, sans-serif;
-          background: #0f172a;
-          color: #e5e7eb;
-          padding: 40px;
-        }
-        .container {
-          max-width: 900px;
-          margin: auto;
-        }
-        h1 {
-          color: #38bdf8;
-        }
-        .card {
-          background: #020617;
-          padding: 20px;
-          border-radius: 10px;
-          margin-top: 20px;
-        }
-        .badge {
-          display: inline-block;
-          background: #22c55e;
-          color: #022c22;
-          padding: 6px 12px;
-          border-radius: 6px;
-          font-weight: bold;
-          margin-bottom: 10px;
-        }
-        ul {
-          margin-top: 10px;
-        }
-      </style>
-    </head>
+<!-- HERO SECTION -->
+<section class="relative overflow-hidden pt-32 pb-20 md:pt-44 md:pb-32">
+  <div class="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 h-[600px] w-[800px] rounded-full opacity-20 blur-[120px]" style="background: radial-gradient(ellipse, #38bdf8 0%, transparent 70%)" aria-hidden="true"></div>
+  <div class="relative mx-auto max-w-7xl px-6 text-center">
+    <span class="mb-6 inline-block rounded-full border border-kube-primary/30 px-4 py-1.5 text-xs font-medium text-kube-primary">New: CKA Exam Prep 2026 is live</span>
+    <h1 class="mx-auto max-w-4xl text-4xl font-extrabold leading-tight tracking-tight text-kube-heading md:text-6xl lg:text-7xl" style="text-wrap: balance;">
+      Master Kubernetes<br/><span class="text-kube-primary">From Zero to Hero</span>
+    </h1>
+    <p class="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-kube-muted md:text-xl" style="text-wrap: pretty;">
+      Hands-on labs, expert-led courses, and real-world projects. The most comprehensive platform for DevOps engineers and cloud professionals to learn Kubernetes.
+    </p>
+    <div class="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+      <a href="#get-started" class="inline-flex items-center gap-2 rounded-lg bg-kube-primary px-6 py-3 text-sm font-medium text-kube-bg transition-colors hover:bg-kube-primary/90">
+        Start Learning Free
+        <svg class="size-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+      </a>
+      <a href="#demo" class="inline-flex items-center gap-2 rounded-lg border border-kube-border px-6 py-3 text-sm font-medium text-kube-text transition-colors hover:bg-kube-surface hover:text-kube-heading">
+        <svg class="size-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Watch Demo
+      </a>
+    </div>
 
-    <body>
-      <div class="container">
-        <span class="badge">Projet DevOps – Kubernetes</span>
-        <h1>Bienvenue <%= user %> </h1>
-
-        <div class="card">
-          <h2> Kubernetes – Présentation</h2>
-          <p>
-            Kubernetes est une plateforme open-source d’orchestration de conteneurs.
-            Elle permet d’automatiser le déploiement, la montée en charge et la gestion
-            des applications conteneurisées.
-          </p>
-          <ul>
-            <li>Orchestration de conteneurs Docker</li>
-            <li>Haute disponibilité</li>
-            <li>Découverte réseau automatique</li>
-            <li>Gestion des secrets et configurations</li>
-          </ul>
-        </div>
-
-        <div class="card">
-          <h2>Architecture de l’application</h2>
-          <ul>
-            <li><b>Node.js (Express)</b> : API Backend</li>
-            <li><b>PostgreSQL</b> : Base de données relationnelle</li>
-            <li><b>Redis</b> : Cache pour améliorer les performances</li>
-            <li><b>Kubernetes</b> : Orchestration multi-containers</li>
-          </ul>
-        </div>
-
-        <div class="card">
-          <h2>Sécurité</h2>
-          <p>
-            Les identifiants sensibles (PostgreSQL) sont injectés via
-            <b>Kubernetes Secrets</b>. Aucun mot de passe n’est stocké
-            dans le code source ou sur GitHub.
-          </p>
-        </div>
-         <div class="card">
-          <h2>Déploiement</h2>
-          <p>
-            L’application est déployée sur un cluster Kubernetes local (Minikube).
-            Les fichiers de configuration YAML définissent les déploiements, services
-            et secrets nécessaires.
-          </p>
+    <!-- Terminal -->
+    <div class="mx-auto mt-16 max-w-3xl overflow-hidden rounded-xl border border-kube-border bg-kube-surface shadow-2xl shadow-kube-primary/5">
+      <div class="flex items-center gap-2 border-b border-kube-border px-4 py-3">
+        <div class="size-3 rounded-full bg-red-500/60"></div>
+        <div class="size-3 rounded-full bg-yellow-500/40"></div>
+        <div class="size-3 rounded-full bg-green-500/40"></div>
+        <span class="ml-3 text-xs text-kube-muted font-mono">terminal</span>
       </div>
-    </body>
-    </html>
+      <div class="p-6 text-left font-mono text-sm leading-relaxed">
+        <p class="text-kube-muted"><span class="text-kube-accent">$</span> kubectl get pods --namespace production</p>
+        <div class="mt-3 text-kube-muted">
+          <p class="text-kube-text/70">NAME                              READY   STATUS    RESTARTS   AGE</p>
+          <p><span class="text-kube-primary">web-frontend-6d8f9c7b4-x2k9p</span>  1/1     Running   0          2d</p>
+          <p><span class="text-kube-primary">api-server-5c4d8e9f1-m7n3q</span>   1/1     Running   0          2d</p>
+          <p><span class="text-kube-accent">redis-cache-8b2a1c3d5-j4h6r</span>  1/1     Running   0          5d</p>
+        </div>
+        <p class="mt-3 text-kube-muted"><span class="text-kube-accent">$</span> <span class="terminal-cursor text-kube-heading">_</span></p>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="mx-auto mt-16 grid max-w-3xl grid-cols-2 gap-8 md:grid-cols-4">
+      <div class="text-center"><p class="text-3xl font-bold text-kube-heading">50K+</p><p class="mt-1 text-sm text-kube-muted">Engineers</p></div>
+      <div class="text-center"><p class="text-3xl font-bold text-kube-heading">120+</p><p class="mt-1 text-sm text-kube-muted">Courses</p></div>
+      <div class="text-center"><p class="text-3xl font-bold text-kube-heading">95%</p><p class="mt-1 text-sm text-kube-muted">Pass Rate</p></div>
+      <div class="text-center"><p class="text-3xl font-bold text-kube-heading">4.9/5</p><p class="mt-1 text-sm text-kube-muted">Rating</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- COURSES SECTION -->
+<section id="courses" class="py-20 md:py-28">
+  <div class="mx-auto max-w-7xl px-6">
+    <div class="text-center">
+      <span class="mb-4 inline-block rounded-full border border-kube-primary/30 px-4 py-1.5 text-xs font-medium text-kube-primary">Popular Courses</span>
+      <h2 class="text-3xl font-bold tracking-tight text-kube-heading md:text-4xl" style="text-wrap: balance;">Learn by Doing, Not Just Watching</h2>
+      <p class="mx-auto mt-4 max-w-2xl text-kube-muted" style="text-wrap: pretty;">Each course includes hands-on labs with real Kubernetes clusters. Practice in browser-based terminals with guided exercises.</p>
+    </div>
+    <div class="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <!-- Course 1 -->
+      <div class="group overflow-hidden rounded-xl border border-kube-border bg-kube-surface transition-all hover:border-kube-primary/30 hover:shadow-lg hover:shadow-kube-primary/5">
+        <div class="h-2 bg-kube-primary"></div>
+        <div class="p-6">
+          <div class="flex items-center justify-between">
+            <span class="rounded-full bg-green-500/10 px-3 py-1 text-xs font-medium text-green-400">Beginner</span>
+            <div class="flex items-center gap-1 text-sm text-yellow-400">
+              <svg class="size-3.5 fill-current" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+              4.9
+            </div>
+          </div>
+          <h3 class="mt-4 text-lg font-semibold text-kube-heading">Kubernetes Fundamentals</h3>
+          <p class="mt-2 text-sm leading-relaxed text-kube-muted">Pods, Deployments, Services, ConfigMaps, and Secrets. Build a solid foundation.</p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <span class="rounded bg-kube-card px-2 py-0.5 text-xs text-kube-muted">Pods</span>
+            <span class="rounded bg-kube-card px-2 py-0.5 text-xs text-kube-muted">Services</span>
+            <span class="rounded bg-kube-card px-2 py-0.5 text-xs text-kube-muted">Deployments</span>
+          </div>
+          <div class="mt-5 flex items-center justify-between border-t border-kube-border/50 pt-4 text-xs text-kube-muted">
+            <span>24 Lessons</span><span>8 Hours</span><span>12 Labs</span>
+          </div>
+        </div>
+      </div>
+      <!-- Course 2 -->
+      <div class="group overflow-hidden rounded-xl border border-kube-border bg-kube-surface transition-all hover:border-kube-primary/30 hover:shadow-lg hover:shadow-kube-primary/5">
+        <div class="h-2 bg-yellow-500"></div>
+        <div class="p-6">
+          <div class="flex items-center justify-between">
+            <span class="rounded-full bg-yellow-500/10 px-3 py-1 text-xs font-medium text-yellow-400">Intermediate</span>
+            <div class="flex items-center gap-1 text-sm text-yellow-400">
+              <svg class="size-3.5 fill-current" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+              4.8
+            </div>
+          </div>
+          <h3 class="mt-4 text-lg font-semibold text-kube-heading">Helm & Package Management</h3>
+          <p class="mt-2 text-sm leading-relaxed text-kube-muted">Master Helm charts, templating, repositories, and release management.</p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <span class="rounded bg-kube-card px-2 py-0.5 text-xs text-kube-muted">Helm</span>
+            <span class="rounded bg-kube-card px-2 py-0.5 text-xs text-kube-muted">Charts</span>
+            <span class="rounded bg-kube-card px-2 py-0.5 text-xs text-kube-muted">Templating</span>
+          </div>
+          <div class="mt-5 flex items-center justify-between border-t border-kube-border/50 pt-4 text-xs text-kube-muted">
+            <span>18 Lessons</span><span>6 Hours</span><span>8 Labs</span>
+          </div>
+        </div>
+      </div>
+      <!-- Course 3 -->
+      <div class="group overflow-hidden rounded-xl border border-kube-border bg-kube-surface transition-all hover:border-kube-primary/30 hover:shadow-lg hover:shadow-kube-primary/5">
+        <div class="h-2 bg-red-500"></div>
+        <div class="p-6">
+          <div class="flex items-center justify-between">
+            <span class="rounded-full bg-red-500/10 px-3 py-1 text-xs font-medium text-red-400">Advanced</span>
+            <div class="flex items-center gap-1 text-sm text-yellow-400">
+              <svg class="size-3.5 fill-current" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+              4.9
+            </div>
+          </div>
+          <h3 class="mt-4 text-lg font-semibold text-kube-heading">CKA Exam Preparation</h3>
+          <p class="mt-2 text-sm leading-relaxed text-kube-muted">Complete CKA exam prep with practice tests, lightning labs, and mock exams.</p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <span class="rounded bg-kube-card px-2 py-0.5 text-xs text-kube-muted">CKA</span>
+            <span class="rounded bg-kube-card px-2 py-0.5 text-xs text-kube-muted">Certification</span>
+            <span class="rounded bg-kube-card px-2 py-0.5 text-xs text-kube-muted">Exams</span>
+          </div>
+          <div class="mt-5 flex items-center justify-between border-t border-kube-border/50 pt-4 text-xs text-kube-muted">
+            <span>42 Lessons</span><span>16 Hours</span><span>20 Labs</span>
+          </div>
+        </div>
+      </div>
+      <!-- Course 4 -->
+      <div class="group overflow-hidden rounded-xl border border-kube-border bg-kube-surface transition-all hover:border-kube-primary/30 hover:shadow-lg hover:shadow-kube-primary/5">
+        <div class="h-2 bg-[#2dd4bf]"></div>
+        <div class="p-6">
+          <div class="flex items-center justify-between">
+            <span class="rounded-full bg-[#2dd4bf]/10 px-3 py-1 text-xs font-medium text-kube-accent">Intermediate</span>
+            <div class="flex items-center gap-1 text-sm text-yellow-400">
+              <svg class="size-3.5 fill-current" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+              4.7
+            </div>
+          </div>
+          <h3 class="mt-4 text-lg font-semibold text-kube-heading">Networking & Service Mesh</h3>
+          <p class="mt-2 text-sm leading-relaxed text-kube-muted">Ingress controllers, network policies, Istio, and advanced networking patterns.</p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <span class="rounded bg-kube-card px-2 py-0.5 text-xs text-kube-muted">Istio</span>
+            <span class="rounded bg-kube-card px-2 py-0.5 text-xs text-kube-muted">Ingress</span>
+            <span class="rounded bg-kube-card px-2 py-0.5 text-xs text-kube-muted">CNI</span>
+          </div>
+          <div class="mt-5 flex items-center justify-between border-t border-kube-border/50 pt-4 text-xs text-kube-muted">
+            <span>28 Lessons</span><span>10 Hours</span><span>14 Labs</span>
+          </div>
+        </div>
+      </div>
+      <!-- Course 5 -->
+      <div class="group overflow-hidden rounded-xl border border-kube-border bg-kube-surface transition-all hover:border-kube-primary/30 hover:shadow-lg hover:shadow-kube-primary/5">
+        <div class="h-2 bg-kube-primary"></div>
+        <div class="p-6">
+          <div class="flex items-center justify-between">
+            <span class="rounded-full bg-kube-primary/10 px-3 py-1 text-xs font-medium text-kube-primary">Intermediate</span>
+            <div class="flex items-center gap-1 text-sm text-yellow-400">
+              <svg class="size-3.5 fill-current" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+              4.8
+            </div>
+          </div>
+          <h3 class="mt-4 text-lg font-semibold text-kube-heading">CI/CD with Kubernetes</h3>
+          <p class="mt-2 text-sm leading-relaxed text-kube-muted">Build production pipelines with ArgoCD, GitHub Actions, and GitOps workflows.</p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <span class="rounded bg-kube-card px-2 py-0.5 text-xs text-kube-muted">ArgoCD</span>
+            <span class="rounded bg-kube-card px-2 py-0.5 text-xs text-kube-muted">GitOps</span>
+            <span class="rounded bg-kube-card px-2 py-0.5 text-xs text-kube-muted">CI/CD</span>
+          </div>
+          <div class="mt-5 flex items-center justify-between border-t border-kube-border/50 pt-4 text-xs text-kube-muted">
+            <span>22 Lessons</span><span>9 Hours</span><span>10 Labs</span>
+          </div>
+        </div>
+      </div>
+      <!-- Course 6 -->
+      <div class="group overflow-hidden rounded-xl border border-kube-border bg-kube-surface transition-all hover:border-kube-primary/30 hover:shadow-lg hover:shadow-kube-primary/5">
+        <div class="h-2 bg-red-400"></div>
+        <div class="p-6">
+          <div class="flex items-center justify-between">
+            <span class="rounded-full bg-red-500/10 px-3 py-1 text-xs font-medium text-red-400">Advanced</span>
+            <div class="flex items-center gap-1 text-sm text-yellow-400">
+              <svg class="size-3.5 fill-current" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+              4.9
+            </div>
+          </div>
+          <h3 class="mt-4 text-lg font-semibold text-kube-heading">Kubernetes Security (CKS)</h3>
+          <p class="mt-2 text-sm leading-relaxed text-kube-muted">RBAC, Pod Security, OPA Gatekeeper, supply chain security, and runtime protection.</p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <span class="rounded bg-kube-card px-2 py-0.5 text-xs text-kube-muted">RBAC</span>
+            <span class="rounded bg-kube-card px-2 py-0.5 text-xs text-kube-muted">Security</span>
+            <span class="rounded bg-kube-card px-2 py-0.5 text-xs text-kube-muted">CKS</span>
+          </div>
+          <div class="mt-5 flex items-center justify-between border-t border-kube-border/50 pt-4 text-xs text-kube-muted">
+            <span>36 Lessons</span><span>14 Hours</span><span>18 Labs</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LEARNING PATHS SECTION -->
+<section id="paths" class="bg-kube-surface/30 py-20 md:py-28">
+  <div class="mx-auto max-w-7xl px-6">
+    <div class="text-center">
+      <span class="mb-4 inline-block rounded-full border border-kube-accent/30 px-4 py-1.5 text-xs font-medium text-kube-accent">Learning Paths</span>
+      <h2 class="text-3xl font-bold tracking-tight text-kube-heading md:text-4xl" style="text-wrap: balance;">Structured Paths to Your Goals</h2>
+      <p class="mx-auto mt-4 max-w-2xl text-kube-muted" style="text-wrap: pretty;">Follow curated learning paths designed to take you from your current level to certification and career advancement.</p>
+    </div>
+    <div class="mt-14 grid gap-6 md:grid-cols-3">
+      <div class="group cursor-pointer overflow-hidden rounded-xl border border-kube-primary/20 bg-kube-surface p-8 transition-all hover:shadow-lg hover:shadow-kube-primary/5">
+        <div class="mb-5 flex size-12 items-center justify-center rounded-lg bg-kube-primary/10">
+          <svg class="size-6 text-kube-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        </div>
+        <h3 class="text-xl font-semibold text-kube-heading">CKA Certification Prep</h3>
+        <p class="mt-3 text-sm leading-relaxed text-kube-muted">Structured curriculum covering every CKA exam objective with practice exams and hands-on labs.</p>
+        <div class="mt-6 flex items-center gap-4 text-xs text-kube-muted"><span>8 Courses</span><span class="size-1 rounded-full bg-kube-border"></span><span>40 hours</span></div>
+        <div class="mt-6 flex items-center gap-1.5 text-sm font-medium text-kube-primary transition-colors group-hover:text-kube-accent">
+          Explore Path
+          <svg class="size-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+        </div>
+      </div>
+      <div class="group cursor-pointer overflow-hidden rounded-xl border border-kube-accent/20 bg-kube-surface p-8 transition-all hover:shadow-lg hover:shadow-kube-accent/5">
+        <div class="mb-5 flex size-12 items-center justify-center rounded-lg bg-kube-accent/10">
+          <svg class="size-6 text-kube-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        </div>
+        <h3 class="text-xl font-semibold text-kube-heading">DevOps Engineer Path</h3>
+        <p class="mt-3 text-sm leading-relaxed text-kube-muted">From containers to CI/CD pipelines. Build production-grade infrastructure with Kubernetes.</p>
+        <div class="mt-6 flex items-center gap-4 text-xs text-kube-muted"><span>12 Courses</span><span class="size-1 rounded-full bg-kube-border"></span><span>60 hours</span></div>
+        <div class="mt-6 flex items-center gap-1.5 text-sm font-medium text-kube-primary transition-colors group-hover:text-kube-accent">
+          Explore Path
+          <svg class="size-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+        </div>
+      </div>
+      <div class="group cursor-pointer overflow-hidden rounded-xl border border-kube-border bg-kube-surface p-8 transition-all hover:shadow-lg">
+        <div class="mb-5 flex size-12 items-center justify-center rounded-lg bg-kube-heading/10">
+          <svg class="size-6 text-kube-heading" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        </div>
+        <h3 class="text-xl font-semibold text-kube-heading">Platform Engineer Path</h3>
+        <p class="mt-3 text-sm leading-relaxed text-kube-muted">Design internal developer platforms, service meshes, and multi-tenant Kubernetes environments.</p>
+        <div class="mt-6 flex items-center gap-4 text-xs text-kube-muted"><span>10 Courses</span><span class="size-1 rounded-full bg-kube-border"></span><span>50 hours</span></div>
+        <div class="mt-6 flex items-center gap-1.5 text-sm font-medium text-kube-primary transition-colors group-hover:text-kube-accent">
+          Explore Path
+          <svg class="size-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES SECTION -->
+<section class="py-20 md:py-28">
+  <div class="mx-auto max-w-7xl px-6">
+    <div class="text-center">
+      <span class="mb-4 inline-block rounded-full border border-kube-primary/30 px-4 py-1.5 text-xs font-medium text-kube-primary">Why KubeLearn</span>
+      <h2 class="text-3xl font-bold tracking-tight text-kube-heading md:text-4xl" style="text-wrap: balance;">Built for Real Engineers</h2>
+      <p class="mx-auto mt-4 max-w-2xl text-kube-muted">Everything you need to go from learning to deploying production Kubernetes clusters.</p>
+    </div>
+    <div class="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="rounded-xl border border-kube-border bg-kube-surface p-6">
+        <div class="mb-4 flex size-10 items-center justify-center rounded-lg bg-kube-primary/10">
+          <svg class="size-5 text-kube-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        </div>
+        <h3 class="text-base font-semibold text-kube-heading">Browser-Based Labs</h3>
+        <p class="mt-2 text-sm leading-relaxed text-kube-muted">Real Kubernetes clusters in your browser. No local setup, no cloud bills. Just learn.</p>
+      </div>
+      <div class="rounded-xl border border-kube-border bg-kube-surface p-6">
+        <div class="mb-4 flex size-10 items-center justify-center rounded-lg bg-kube-accent/10">
+          <svg class="size-5 text-kube-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        </div>
+        <h3 class="text-base font-semibold text-kube-heading">Certification Ready</h3>
+        <p class="mt-2 text-sm leading-relaxed text-kube-muted">Aligned with CKA, CKAD, and CKS exam objectives. Practice with real exam-style questions.</p>
+      </div>
+      <div class="rounded-xl border border-kube-border bg-kube-surface p-6">
+        <div class="mb-4 flex size-10 items-center justify-center rounded-lg bg-kube-primary/10">
+          <svg class="size-5 text-kube-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+        </div>
+        <h3 class="text-base font-semibold text-kube-heading">Expert Instructors</h3>
+        <p class="mt-2 text-sm leading-relaxed text-kube-muted">Learn from CNCF ambassadors and Kubernetes contributors with real production experience.</p>
+      </div>
+      <div class="rounded-xl border border-kube-border bg-kube-surface p-6">
+        <div class="mb-4 flex size-10 items-center justify-center rounded-lg bg-kube-accent/10">
+          <svg class="size-5 text-kube-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        </div>
+        <h3 class="text-base font-semibold text-kube-heading">Active Community</h3>
+        <p class="mt-2 text-sm leading-relaxed text-kube-muted">Slack channels, discussion forums, and study groups. Never learn alone.</p>
+      </div>
+      <div class="rounded-xl border border-kube-border bg-kube-surface p-6">
+        <div class="mb-4 flex size-10 items-center justify-center rounded-lg bg-kube-primary/10">
+          <svg class="size-5 text-kube-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+        </div>
+        <h3 class="text-base font-semibold text-kube-heading">Security First</h3>
+        <p class="mt-2 text-sm leading-relaxed text-kube-muted">Dedicated security modules covering RBAC, network policies, Pod Security, and supply chain security.</p>
+      </div>
+      <div class="rounded-xl border border-kube-border bg-kube-surface p-6">
+        <div class="mb-4 flex size-10 items-center justify-center rounded-lg bg-kube-accent/10">
+          <svg class="size-5 text-kube-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        </div>
+        <h3 class="text-base font-semibold text-kube-heading">Progress Tracking</h3>
+        <p class="mt-2 text-sm leading-relaxed text-kube-muted">Track your skills, earn badges, and see your growth with detailed analytics dashboards.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS SECTION -->
+<section class="bg-kube-surface/30 py-20 md:py-28">
+  <div class="mx-auto max-w-7xl px-6">
+    <div class="text-center">
+      <span class="mb-4 inline-block rounded-full border border-kube-accent/30 px-4 py-1.5 text-xs font-medium text-kube-accent">Testimonials</span>
+      <h2 class="text-3xl font-bold tracking-tight text-kube-heading md:text-4xl" style="text-wrap: balance;">Trusted by Engineers Worldwide</h2>
+    </div>
+    <div class="mt-14 grid gap-6 md:grid-cols-3">
+      <div class="rounded-xl border border-kube-border bg-kube-surface p-6">
+        <div class="flex gap-1">
+          <svg class="size-4 fill-yellow-400 text-yellow-400" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+          <svg class="size-4 fill-yellow-400 text-yellow-400" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+          <svg class="size-4 fill-yellow-400 text-yellow-400" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+          <svg class="size-4 fill-yellow-400 text-yellow-400" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+          <svg class="size-4 fill-yellow-400 text-yellow-400" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+        </div>
+        <p class="mt-4 text-sm leading-relaxed text-kube-muted">"Passed my CKA on the first attempt thanks to KubeLearn. The hands-on labs are incredibly realistic and the practice exams were spot on."</p>
+        <div class="mt-6 flex items-center gap-3">
+          <div class="flex size-10 items-center justify-center rounded-full bg-kube-primary/20 text-sm font-bold text-kube-primary">SK</div>
+          <div><p class="text-sm font-medium text-kube-heading">Sarah Kim</p><p class="text-xs text-kube-muted">Senior DevOps Engineer, Stripe</p></div>
+        </div>
+      </div>
+      <div class="rounded-xl border border-kube-border bg-kube-surface p-6">
+        <div class="flex gap-1">
+          <svg class="size-4 fill-yellow-400 text-yellow-400" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+          <svg class="size-4 fill-yellow-400 text-yellow-400" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+          <svg class="size-4 fill-yellow-400 text-yellow-400" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+          <svg class="size-4 fill-yellow-400 text-yellow-400" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+          <svg class="size-4 fill-yellow-400 text-yellow-400" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+        </div>
+        <p class="mt-4 text-sm leading-relaxed text-kube-muted">"The platform engineer path transformed how I think about infrastructure. Real-world projects that I could directly apply at work."</p>
+        <div class="mt-6 flex items-center gap-3">
+          <div class="flex size-10 items-center justify-center rounded-full bg-kube-accent/20 text-sm font-bold text-kube-accent">MR</div>
+          <div><p class="text-sm font-medium text-kube-heading">Marcus Rodriguez</p><p class="text-xs text-kube-muted">Platform Engineer, Shopify</p></div>
+        </div>
+      </div>
+      <div class="rounded-xl border border-kube-border bg-kube-surface p-6">
+        <div class="flex gap-1">
+          <svg class="size-4 fill-yellow-400 text-yellow-400" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+          <svg class="size-4 fill-yellow-400 text-yellow-400" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+          <svg class="size-4 fill-yellow-400 text-yellow-400" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+          <svg class="size-4 fill-yellow-400 text-yellow-400" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+          <svg class="size-4 fill-yellow-400 text-yellow-400" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+        </div>
+        <p class="mt-4 text-sm leading-relaxed text-kube-muted">"Best Kubernetes learning platform I've used. The browser-based labs feel like a real cluster. Way better than just watching videos."</p>
+        <div class="mt-6 flex items-center gap-3">
+          <div class="flex size-10 items-center justify-center rounded-full bg-kube-primary/20 text-sm font-bold text-kube-primary">AP</div>
+          <div><p class="text-sm font-medium text-kube-heading">Aisha Patel</p><p class="text-xs text-kube-muted">SRE, Google Cloud</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING SECTION -->
+<section id="pricing" class="py-20 md:py-28">
+  <div class="mx-auto max-w-7xl px-6">
+    <div class="text-center">
+      <span class="mb-4 inline-block rounded-full border border-kube-primary/30 px-4 py-1.5 text-xs font-medium text-kube-primary">Pricing</span>
+      <h2 class="text-3xl font-bold tracking-tight text-kube-heading md:text-4xl" style="text-wrap: balance;">Simple, Transparent Pricing</h2>
+      <p class="mx-auto mt-4 max-w-2xl text-kube-muted">Start free, upgrade when you're ready. No hidden fees.</p>
+    </div>
+    <div class="mt-14 grid gap-6 md:grid-cols-3">
+      <!-- Free -->
+      <div class="rounded-xl border border-kube-border bg-kube-surface p-8">
+        <h3 class="text-lg font-semibold text-kube-heading">Free</h3>
+        <p class="mt-2 text-sm text-kube-muted">Get started with the basics</p>
+        <div class="mt-6"><span class="text-4xl font-bold text-kube-heading">$0</span><span class="text-sm text-kube-muted">/month</span></div>
+        <a href="#get-started" class="mt-8 flex items-center justify-center rounded-lg border border-kube-border px-6 py-3 text-sm font-medium text-kube-text transition-colors hover:bg-kube-card hover:text-kube-heading">Start Free</a>
+        <ul class="mt-8 flex flex-col gap-3">
+          <li class="flex items-start gap-3 text-sm text-kube-muted"><svg class="mt-0.5 size-4 shrink-0 text-kube-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>5 free courses</li>
+          <li class="flex items-start gap-3 text-sm text-kube-muted"><svg class="mt-0.5 size-4 shrink-0 text-kube-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>2 lab sessions per day</li>
+          <li class="flex items-start gap-3 text-sm text-kube-muted"><svg class="mt-0.5 size-4 shrink-0 text-kube-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>Community forum access</li>
+          <li class="flex items-start gap-3 text-sm text-kube-muted"><svg class="mt-0.5 size-4 shrink-0 text-kube-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>Basic progress tracking</li>
+        </ul>
+      </div>
+      <!-- Pro -->
+      <div class="relative rounded-xl border-2 border-kube-primary bg-kube-surface p-8 shadow-lg shadow-kube-primary/10">
+        <span class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-kube-primary px-4 py-1 text-xs font-semibold text-kube-bg">Most Popular</span>
+        <h3 class="text-lg font-semibold text-kube-heading">Pro</h3>
+        <p class="mt-2 text-sm text-kube-muted">For serious learners</p>
+        <div class="mt-6"><span class="text-4xl font-bold text-kube-heading">$29</span><span class="text-sm text-kube-muted">/month</span></div>
+        <a href="#get-started" class="mt-8 flex items-center justify-center rounded-lg bg-kube-primary px-6 py-3 text-sm font-medium text-kube-bg transition-colors hover:bg-kube-primary/90">Start Pro Trial</a>
+        <ul class="mt-8 flex flex-col gap-3">
+          <li class="flex items-start gap-3 text-sm text-kube-muted"><svg class="mt-0.5 size-4 shrink-0 text-kube-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>All 120+ courses</li>
+          <li class="flex items-start gap-3 text-sm text-kube-muted"><svg class="mt-0.5 size-4 shrink-0 text-kube-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>Unlimited lab sessions</li>
+          <li class="flex items-start gap-3 text-sm text-kube-muted"><svg class="mt-0.5 size-4 shrink-0 text-kube-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>Certification practice exams</li>
+          <li class="flex items-start gap-3 text-sm text-kube-muted"><svg class="mt-0.5 size-4 shrink-0 text-kube-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>Priority Slack support</li>
+          <li class="flex items-start gap-3 text-sm text-kube-muted"><svg class="mt-0.5 size-4 shrink-0 text-kube-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>Advanced analytics</li>
+        </ul>
+      </div>
+      <!-- Team -->
+      <div class="rounded-xl border border-kube-border bg-kube-surface p-8">
+        <h3 class="text-lg font-semibold text-kube-heading">Team</h3>
+        <p class="mt-2 text-sm text-kube-muted">For organizations</p>
+        <div class="mt-6"><span class="text-4xl font-bold text-kube-heading">$79</span><span class="text-sm text-kube-muted">/user/month</span></div>
+        <a href="#contact" class="mt-8 flex items-center justify-center rounded-lg border border-kube-border px-6 py-3 text-sm font-medium text-kube-text transition-colors hover:bg-kube-card hover:text-kube-heading">Contact Sales</a>
+        <ul class="mt-8 flex flex-col gap-3">
+          <li class="flex items-start gap-3 text-sm text-kube-muted"><svg class="mt-0.5 size-4 shrink-0 text-kube-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>Everything in Pro</li>
+          <li class="flex items-start gap-3 text-sm text-kube-muted"><svg class="mt-0.5 size-4 shrink-0 text-kube-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>Team management dashboard</li>
+          <li class="flex items-start gap-3 text-sm text-kube-muted"><svg class="mt-0.5 size-4 shrink-0 text-kube-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>Custom learning paths</li>
+          <li class="flex items-start gap-3 text-sm text-kube-muted"><svg class="mt-0.5 size-4 shrink-0 text-kube-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>SSO & SAML integration</li>
+          <li class="flex items-start gap-3 text-sm text-kube-muted"><svg class="mt-0.5 size-4 shrink-0 text-kube-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>Dedicated account manager</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA SECTION -->
+<section class="relative overflow-hidden bg-kube-surface/30 py-20 md:py-28">
+  <div class="pointer-events-none absolute inset-0 opacity-10" style="background: radial-gradient(ellipse at center, #38bdf8 0%, transparent 60%)" aria-hidden="true"></div>
+  <div class="relative mx-auto max-w-3xl px-6 text-center">
+    <h2 class="text-3xl font-bold tracking-tight text-kube-heading md:text-5xl" style="text-wrap: balance;">
+      Ready to Start Your<br/><span class="text-kube-primary">Kubernetes Journey?</span>
+    </h2>
+    <p class="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-kube-muted" style="text-wrap: pretty;">Join 50,000+ engineers who have accelerated their cloud-native careers with KubeLearn. Start for free today.</p>
+    <div class="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+      <a href="#get-started" class="inline-flex items-center gap-2 rounded-lg bg-kube-primary px-6 py-3 text-sm font-medium text-kube-bg transition-colors hover:bg-kube-primary/90">
+        Get Started Free
+        <svg class="size-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+      </a>
+      <a href="#pricing" class="inline-flex items-center rounded-lg border border-kube-border px-6 py-3 text-sm font-medium text-kube-text transition-colors hover:bg-kube-surface hover:text-kube-heading">View Pricing</a>
+    </div>
+  </div>
+</section>
