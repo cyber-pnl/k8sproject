@@ -10,11 +10,12 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "express": "^5.2.1",
-    "pg": "^8.18.0",
-    "redis": "^5.10.0",
     "bcrypt": "^6.0.0",
+    "debug": "^4.4.3",
     "ejs": "^4.0.1",
-    "express-session": "^1.19.0"
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "pg": "^8.18.0",
+    "redis": "^5.10.0"
   }
 }

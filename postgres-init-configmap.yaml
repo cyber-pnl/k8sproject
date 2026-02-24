@@ -7,5 +7,15 @@ data:
     CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         username VARCHAR(100) UNIQUE NOT NULL,
-        password TEXT NOT NULL
+        password TEXT NOT NULL,
+        role VARCHAR(20) NOT NULL DEFAULT 'USER'
     );
+
+    -- Création automatique de l'admin (si pas déjà présent)
+    INSERT INTO users (username, password, role)
+    VALUES (
+        'admin',
+        '$2y$10$FNYDNVzSEc0MElJb.tfOpe1JoWWSkqihq0JuKjlmPpJIMcysbHuRa',
+        'ADMIN'
+    )
+    ON CONFLICT (username) DO NOTHING;
