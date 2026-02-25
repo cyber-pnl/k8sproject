@@ -1,15 +1,18 @@
-const express = require("express");
-const bcrypt = require("bcrypt");
-const router = express.Router();
+/**
+ * Auth Routes
+ * Handles login, signup, logout endpoints
+ */
 
-const { pgClient } = require("../services/db.services");
-const { isAdmin } = require("../middlewares/auth.middleware");
+const express = require("express");
+const router = express.Router();
+const authController = require("./controller");
+const { isAdmin } = require("../../shared/middlewares/auth.middleware");
 
 /**
- * PAGE LOGIN
+ * GET /login
+ * Render login page
  */
 router.get("/login", (req, res) => {
-  // If already logged in, redirect based on role
   if (req.session.user) {
     if (req.session.user.role === "admin") {
       return res.redirect("/dashboard");
@@ -24,10 +27,10 @@ router.get("/login", (req, res) => {
 });
 
 /**
- * PAGE SIGNUP
+ * GET /signup
+ * Render signup page
  */
 router.get("/signup", (req, res) => {
-  // If already logged in, redirect based on role
   if (req.session.user) {
     if (req.session.user.role === "admin") {
       return res.redirect("/dashboard");
@@ -42,7 +45,8 @@ router.get("/signup", (req, res) => {
 });
 
 /**
- * TRAITEMENT LOGIN
+ * POST /login
+ * Handle login form submission
  */
 router.post("/login", async (req, res) => {
   const { username, password } = req.body;
@@ -52,31 +56,24 @@ router.post("/login", async (req, res) => {
   }
 
   try {
-    const result = await pgClient.query(
-      "SELECT * FROM users WHERE username = $1",
-      [username]
-    );
+    const user = await authController.findUserByUsername(username);
 
-    if (result.rows.length === 0) {
-      // User doesn't exist
+    if (!user) {
       return res.redirect("/login?error=2");
     }
 
-    // User exists - verify password
-    const user = result.rows[0];
-    const passwordMatch = await bcrypt.compare(password, user.password);
+    const passwordMatch = await authController.verifyPassword(password, user.password);
     if (!passwordMatch) {
       return res.redirect("/login?error=1");
     }
 
-    // Session - store user object
+    // Set session
     req.session.user = {
       id: user.id,
       username: user.username,
-      role: user.role || "user",
+      role: user.role,
     };
 
-    // Redirect based on role
     if (user.role === "admin") {
       return res.redirect("/dashboard");
     }
@@ -88,7 +85,8 @@ router.post("/login", async (req, res) => {
 });
 
 /**
- * TRAITEMENT SIGNUP
+ * POST /signup
+ * Handle signup form submission
  */
 router.post("/signup", async (req, res) => {
   const { username, password, confirmPassword } = req.body;
@@ -111,31 +109,22 @@ router.post("/signup", async (req, res) => {
 
   try {
     // Check if user already exists
-    const existingUser = await pgClient.query(
-      "SELECT * FROM users WHERE username = $1",
-      [username]
-    );
+    const existingUser = await authController.findUserByUsername(username);
 
-    if (existingUser.rows.length > 0) {
+    if (existingUser) {
       return res.redirect("/signup?error=5");
     }
 
     // Create new user
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = await authController.createUser(username, password, "user");
 
-    const insertResult = await pgClient.query(
-      "INSERT INTO users (username, password, role) VALUES ($1, $2, $3) RETURNING *",
-      [username, hashedPassword, "user"]
-    );
-
-    // Session - store user object
+    // Set session
     req.session.user = {
-      id: insertResult.rows[0].id,
-      username: insertResult.rows[0].username,
-      role: insertResult.rows[0].role || "user",
+      id: newUser.id,
+      username: newUser.username,
+      role: newUser.role,
     };
 
-    // Redirect to home
     res.redirect("/");
   } catch (err) {
     console.error("Signup error:", err);
@@ -144,7 +133,8 @@ router.post("/signup", async (req, res) => {
 });
 
 /**
- * LOGOUT - Déconnexion
+ * GET /logout
+ * Handle logout
  */
 router.get("/logout", (req, res) => {
   req.session.destroy((err) => {
@@ -156,7 +146,8 @@ router.get("/logout", (req, res) => {
 });
 
 /**
- * PAGE USERS (Admin only) - Liste des utilisateurs
+ * GET /users
+ * List all users (admin only)
  */
 router.get("/users", isAdmin, async (req, res) => {
   if (!req.session.user) {
@@ -164,13 +155,10 @@ router.get("/users", isAdmin, async (req, res) => {
   }
 
   try {
-    const result = await pgClient.query(
-      "SELECT id, username, role FROM users ORDER BY id"
-    );
-
+    const users = await authController.getAllUsers();
     res.render("users", { 
       user: req.session.user,
-      users: result.rows 
+      users: users 
     });
   } catch (err) {
     console.error("Error fetching users:", err);

@@ -15,7 +15,7 @@ data:
     INSERT INTO users (username, password, role)
     VALUES (
         'admin',
-        '$2y$10$FNYDNVzSEc0MElJb.tfOpe1JoWWSkqihq0JuKjlmPpJIMcysbHuRa',
+        '$2y$10$FNYDNVzSEc0MElJb.tfOpe1JoWWSkqihq0JuKjlmPpJIMcysbHuRa', mot de passe admin en clair : admin
         'ADMIN'
     )
     ON CONFLICT (username) DO NOTHING;
