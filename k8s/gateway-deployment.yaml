@@ -26,6 +26,9 @@ spec:
               name: https
           volumeMounts:
             - name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+            - name: nginx-confd
               mountPath: /etc/nginx/conf.d
           resources:
             requests:
@@ -38,4 +41,13 @@ spec:
         - name: nginx-config
           configMap:
             name: gateway-config
+            items:
+              - key: nginx.conf
+                path: nginx.conf
+        - name: nginx-confd
+          configMap:
+            name: gateway-config
+            items:
+              - key: default.conf
+                path: default.conf
 

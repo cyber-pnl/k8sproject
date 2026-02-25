@@ -1,3 +1,4 @@
+
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -43,6 +44,42 @@ spec:
           port: 3001
         - protocol: TCP
           port: 3002
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-gateway-to-frontend
+spec:
+  podSelector:
+    matchLabels:
+      tier: frontend
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              tier: gateway
+      ports:
+        - protocol: TCP
+          port: 3003
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              tier: gateway
+      ports:
+        - protocol: TCP
+          port: 80
+    - to:
+        - podSelector: {}
+          namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 53
+        - protocol: UDP
+          port: 53
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -104,6 +141,25 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
+  name: allow-frontend-to-redis
+spec:
+  podSelector:
+    matchLabels:
+      tier: frontend
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: redis
+      ports:
+        - protocol: TCP
+          port: 6379
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
   name: allow-ingress-redis
 spec:
   podSelector:
@@ -116,6 +172,9 @@ spec:
         - podSelector:
             matchLabels:
               tier: backend
+        - podSelector:
+            matchLabels:
+              tier: frontend
       ports:
         - protocol: TCP
           port: 6379

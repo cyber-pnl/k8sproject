@@ -1,9 +1,22 @@
-
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: gateway-config
 data:
+  nginx.conf: |
+    http {
+        # DNS resolver for Kubernetes
+        resolver 10.96.0.10 valid=30s ipv6=off;
+        
+        # Rate limiting zone
+        limit_req_zone $binary_remote_addr zone=api_limit:10m rate=10r/s;
+        
+        include /etc/nginx/conf.d/*.conf;
+    }
+    
+    events {
+        worker_connections 1024;
+    }
   default.conf: |
     upstream auth_service {
         server auth-service:3001;
@@ -13,12 +26,13 @@ data:
         server user-service:3002;
     }
     
+    upstream frontend_service {
+        server frontend-service:3003;
+    }
+    
     server {
         listen 80;
         server_name localhost;
-        
-        # Rate limiting
-        limit_req_zone $binary_remote_addr zone=api_limit:10m rate=10r/s;
         
         # Health check
         location /health {
@@ -26,17 +40,35 @@ data:
             add_header Content-Type text/plain;
         }
         
-        # Auth routes
-        location /auth/ {
-            proxy_pass http://auth_service/;
+        # Login - POST to auth, GET to frontend
+        location = /login {
+            proxy_pass http://frontend_service;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
         }
         
-        # Login/Signup routes
-        location ~ ^/(login|signup|logout) {
+        location = /signup {
+            proxy_pass http://frontend_service;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+        
+        # Auth endpoints for form processing (POST)
+        location /auth/ {
+            proxy_pass http://auth_service;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_pass_request_body on;
+        }
+        
+        # Logout
+        location = /logout {
             proxy_pass http://auth_service;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
@@ -54,13 +86,12 @@ data:
             proxy_set_header X-Forwarded-Proto $scheme;
         }
         
-        # Default - redirect to auth
+        # Default - serve frontend (home, dashboard)
         location / {
-            proxy_pass http://auth_service;
+            proxy_pass http://frontend_service;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
         }
     }
-

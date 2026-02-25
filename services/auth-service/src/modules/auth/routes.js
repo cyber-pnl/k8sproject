@@ -1,15 +1,18 @@
 /**
  * Auth Routes
  * Handles login, signup, logout endpoints
+ * Redirects to frontend-service for views
  */
 
 const express = require("express");
 const router = express.Router();
 const authController = require("./controller");
 
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://frontend-service:3003";
+
 /**
  * GET /login
- * Render login page
+ * Redirect to frontend login page
  */
 router.get("/login", (req, res) => {
   if (req.session.user) {
@@ -19,15 +22,12 @@ router.get("/login", (req, res) => {
     return res.redirect("/");
   }
   
-  res.render("login", { 
-    error: req.query.error,
-    user: null 
-  });
+  res.redirect(`${FRONTEND_URL}/login`);
 });
 
 /**
  * GET /signup
- * Render signup page
+ * Redirect to frontend signup page
  */
 router.get("/signup", (req, res) => {
   if (req.session.user) {
@@ -37,10 +37,7 @@ router.get("/signup", (req, res) => {
     return res.redirect("/");
   }
   
-  res.render("signup", { 
-    error: req.query.error,
-    user: null 
-  });
+  res.redirect(`${FRONTEND_URL}/signup`);
 });
 
 /**
@@ -51,19 +48,19 @@ router.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
-    return res.redirect("/login?error=1");
+    return res.redirect(`${FRONTEND_URL}/login?error=1`);
   }
 
   try {
     const user = await authController.findUserByUsername(username);
 
     if (!user) {
-      return res.redirect("/login?error=2");
+      return res.redirect(`${FRONTEND_URL}/login?error=2`);
     }
 
     const passwordMatch = await authController.verifyPassword(password, user.password);
     if (!passwordMatch) {
-      return res.redirect("/login?error=1");
+      return res.redirect(`${FRONTEND_URL}/login?error=1`);
     }
 
     // Set session
@@ -91,19 +88,19 @@ router.post("/signup", async (req, res) => {
   const { username, password, confirmPassword } = req.body;
 
   if (!username || !password) {
-    return res.redirect("/signup?error=1");
+    return res.redirect(`${FRONTEND_URL}/signup?error=1`);
   }
 
   if (password !== confirmPassword) {
-    return res.redirect("/signup?error=2");
+    return res.redirect(`${FRONTEND_URL}/signup?error=2`);
   }
 
   if (password.length < 6) {
-    return res.redirect("/signup?error=3");
+    return res.redirect(`${FRONTEND_URL}/signup?error=3`);
   }
 
   if (username.length < 3) {
-    return res.redirect("/signup?error=4");
+    return res.redirect(`${FRONTEND_URL}/signup?error=4`);
   }
 
   try {
@@ -111,7 +108,7 @@ router.post("/signup", async (req, res) => {
     const existingUser = await authController.findUserByUsername(username);
 
     if (existingUser) {
-      return res.redirect("/signup?error=5");
+      return res.redirect(`${FRONTEND_URL}/signup?error=5`);
     }
 
     // Create new user
@@ -144,5 +141,16 @@ router.get("/logout", (req, res) => {
   });
 });
 
-module.exports = router;
+/**
+ * GET /dashboard
+ * User dashboard (protected) - redirect to frontend
+ */
+router.get("/dashboard", (req, res) => {
+  if (!req.session.user) {
+    return res.redirect("/login");
+  }
 
+  res.redirect(`${FRONTEND_URL}/dashboard`);
+});
+
+module.exports = router;

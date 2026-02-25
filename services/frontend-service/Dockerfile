@@ -9,10 +9,12 @@ COPY package*.json ./
 RUN npm install
 
 # Copy source code
-COPY src ./src
 COPY index.js ./
+COPY views ./views
+COPY public ./public
+
 # Expose port
-EXPOSE 3001
+EXPOSE 3003
 
 # Start command
 CMD ["node", "index.js"]

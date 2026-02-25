@@ -1,4 +1,4 @@
-const { query } = require("../database");
+const { query } = require("../../shared/database");
 
 /**
  * Find user by username
