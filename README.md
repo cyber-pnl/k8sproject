@@ -1,83 +1,142 @@
-# Projet Kubernetes — Application Multi-Container
+# Projet Kubernetes — Microservices
 
-Ce dépôt contient une application Node.js (Express) avec PostgreSQL et Redis, pensée comme projet pédagogique pour apprendre Kubernetes.  
+Ce dépôt contient une application microservices (Node.js/Express) avec PostgreSQL et Redis, déployée sur Kubernetes. Le projet a été conçu comme un projet pédagogique pour apprendre les microservices et Kubernetes.
 
-L'objectif : construire l'image Docker, déployer les composants dans Kubernetes, et faire tourner chaque application avec 2 réplicas (ReplicaSet ou StatefulSet selon le service).
+L'objectif : construire les images Docker, déployer les composants dans Kubernetes, et faire tourner chaque service avec 2 réplicas.
 
 ---
 
-## Architecture
+## Architecture Microservices
 
-- **Node.js (Express)** — `app/index.js`  
-- **PostgreSQL** — base de données relationnelle  
-- **Redis** — cache  
-- **Kubernetes** — orchestration des microservices  
-- **Service headless** pour PostgreSQL : `postgres-headless-service.yaml`  
+L'**API Gateway** est le point d'entrée unique de l'application. Il reçoit toutes les requêtes des utilisateurs et les redirige vers les services appropriés.
+
+### Pourquoi un Gateway ?
+
+1. **Point d'entrée unique** - Les utilisateurs accèdent à un seul endpoint (port 80/3000) au lieu de connaître tous les services
+2. **Routage** - Dirige les requêtes vers Auth Service ou User Service selon l'URL
+3. **Gestion de session** - Gère les sessions utilisateur avec express-session
+4. **Propagation des headers** - Transmet les infos utilisateur (x-user-id, x-user-role) aux services backend
+5. **Sécurité** - Cache l'architecture interne aux clients externes
+
+### Fonctionnement du Gateway
+
+```
+                                    ┌─────────────────────┐
+                                    │   Gateway Service  │
+                                    │      (Port 3000)   │
+                                    │   LoadBalancer :80 │
+                                    └──────────┬──────────┘
+                                               │
+                    ┌──────────────────────────┴──────────────────────────┐
+                    │                                                         │
+           ┌────────▼─────────┐                                    ┌────────▼─────────┐
+           │   Auth Service   │                                    │   User Service   │
+           │    (Port 3001)  │                                    │    (Port 3002)  │
+           │   2 Réplicas    │                                    │   2 Réplicas    │
+           └────────┬────────┘                                    └────────┬─────────┘
+                    │                                                      │
+                    └──────────────────────┬──────────────────────────────┘
+                                           │
+                    ┌──────────────────────┴──────────────────────┐
+                    │                                               │
+           ┌────────▼─────────┐                            ┌───────▼────────┐
+           │    PostgreSQL    │                            │     Redis     │
+           │    (Port 5432)   │                            │   (Port 6379) │
+           └──────────────────┘                            └───────────────┘
+```
+
+### Services
+
+| Service | Port | Description |
+|---------|------|-------------|
+| Gateway Service | 3000 (ext: 80) | API Gateway, routage vers les microservices |
+| Auth Service | 3001 | Authentification (login, signup, logout) |
+| User Service | 3002 | Gestion des utilisateurs |
+| PostgreSQL | 5432 | Base de données relationnelle |
+| Redis | 6379 | Cache session |
+
+---
+
+## Structure du Projet
+
+```
+.
+├── app/                      # Application monolithique originale (référence)
+├── services/                 # Code source des microservices
+│   ├── gateway-service/      # Service Gateway (port 3000)
+│   ├── auth-service/         # Service Authentification (port 3001)
+│   └── user-service/         # Service Utilisateurs (port 3002)
+├── k8s/                      # Manifests Kubernetes
+│   ├── services/             # Deployments et Services des microservices
+│   ├── postgres-*.yaml       # PostgreSQL (StatefulSet)
+│   ├── redis-*.yaml         # Redis (Deployment)
+│   └── network-policies.yaml # Politiques réseau
+└── README.md
+```
 
 ---
 
 ## Prérequis
 
-- Docker  
-- `kubectl`  
-- Minikube ou Kind (ou un cluster Kubernetes accessible)  
-- Node.js et npm (pour exécuter l’app localement)
+- Docker
+- `kubectl`
+- Minikube ou Kind (ou un cluster Kubernetes accessible)
+- Node.js et npm (pour exécuter localement)
 
 ---
 
-## Exécution locale (sans Kubernetes)
+## Construction des Images Docker
 
-1. Aller dans le dossier de l'application :
-
-```bash
-cd app
-npm init -y
-npm install express pg redis
-npm install ejs
-npm install express-session
-npm install bcrypt
-
-````
-
----
-
-## Construire l'image Docker
-
-### Avec Minikube (recommandé pour dev) :
+### Avec Minikube (recommandé) :
 
 ```bash
 eval $(minikube docker-env)
-docker build -t node-app .
-
 ```
 
-### Avec Kind ou Docker local :
-
-Dans le fichier où il ya le dockerfile
+### Construire chaque service :
 
 ```bash
-docker build -t node-app .
+# Auth Service
+cd services/auth-service
+docker build -t auth-service:latest .
 
-# si Kind :
-kind load docker-image node-app . --name kind
+# User Service
+cd services/user-service
+docker build -t user-service:latest .
+
+# Gateway Service
+cd services/gateway-service
+docker build -t gateway-service:latest .
+```
+
+### Avec Kind :
+
+```bash
+# Construire les images
+docker build -t auth-service:latest ./services/auth-service
+docker build -t user-service:latest ./services/user-service
+docker build -t gateway-service:latest ./services/gateway-service
+
+# Charger dans Kind
+kind load docker-image auth-service:latest --name kind
+kind load docker-image user-service:latest --name kind
+kind load docker-image gateway-service:latest --name kind
 ```
 
 ---
 
 ## Installation de Minikube
 
-Minikube permet de créer un **cluster Kubernetes local** pour le développement et les tests.
+Minikube permet de créer un **cluster Kubernetes local**.
 
-###  Prérequis
+### Prérequis
 
-* Virtualisation activée (VirtualBox, HyperKit, Hyper-V, KVM…)
-* `kubectl` installé :
+- Virtualisation activée (VirtualBox, HyperKit, Hyper-V, KVM…)
+- `kubectl` installé :
 
 ```bash
 kubectl version --client
 ```
-
-* `curl` ou `wget` pour télécharger Minikube
 
 ### Installation
 
@@ -103,20 +162,20 @@ choco install minikube
 minikube version
 ```
 
-###  Démarrer un cluster Minikube
+### Démarrer le cluster
 
 ```bash
 minikube start
 kubectl get nodes
 ```
 
-###  Accéder au dashboard Minikube
+### Accéder au dashboard
 
 ```bash
 minikube dashboard
 ```
 
-###  Arrêter et supprimer Minikube
+### Arrêter et supprimer
 
 ```bash
 minikube stop
@@ -125,79 +184,160 @@ minikube delete
 
 ---
 
-## Déploiement Kubernetes (avec 2 réplicas par service)
+## Déploiement Kubernetes
 
-Nous utilisons **ReplicaSet** pour les services stateless et **StatefulSet** pour PostgreSQL (stateful).
-
-### Créer un secret Kubernetes pour PostgreSQL
+### 1. Créer les Secrets
 
 ```bash
+# Secret PostgreSQL
 kubectl create secret generic postgres-secret \
   --from-literal=POSTGRES_USER=postgres \
   --from-literal=POSTGRES_PASSWORD=postgres \
   --from-literal=POSTGRES_DB=testdb
 
-  kubectl create secret generic app-secret \
+# Secret Application
+kubectl create secret generic app-secret \
   --from-literal=SESSION_SECRET=ma_clef_ultra_complexe_123
 ```
 
-### Appliquer les manifests Kubernetes
+### 2. Déployer PostgreSQL et Redis
 
 ```bash
-kubectl apply -f postgres-headless-service.yaml
-kubectl apply -f postgres-statefulset.yaml
-kubectl apply -f node-deployments.yaml
-kubectl apply -f node-service.yaml  
-kubectl apply -f redis-deployment.yaml
-kubectl apply -f redis-service.yaml 
-kubectl apply -f scan-node-app-cronjob.yaml
+kubectl apply -f k8s/postgres-statefulset.yaml
+kubectl apply -f k8s/postgres-service.yaml
+kubectl apply -f k8s/redis-deployment.yaml
+kubectl apply -f k8s/redis-service.yaml
 ```
 
-### Vérifier les pods et réplicas
+### 3. Déployer les Microservices
 
 ```bash
+kubectl apply -f k8s/services/auth-service.yaml
+kubectl apply -f k8s/services/user-service.yaml
+kubectl apply -f k8s/services/gateway-service.yaml
+```
+
+### 4. (Optionnel) Appliquer les Politiques Réseau
+
+```bash
+kubectl apply -f k8s/network-policies.yaml
+```
+
+### 5. Vérifier le déploiement
+
+```bash
+# Vérifier les ReplicaSets
 kubectl get rs
+
+# Vérifier les pods
 kubectl get pods
+
+# Vérifier les services
 kubectl get svc
 ```
-> Vous devriez voir 2 réplicas par application Node et PostgreSQL.
 
-### Pour lancer l'application
+> Vous devriez voir 2 réplicas par service microservice.
+
+### 6. Accéder à l'application
 
 ```bash
-minikube service node-app
+minikube service gateway-service
 ```
 
 ---
 
-## Notes & conseils
+## Politiques Réseau (Network Policies)
 
-* **ReplicaSet** gère la réplication, mais ne fournit pas les rollouts/rollbacks automatiques. Pour ça, préférez **Deployment**, qui crée et gère des ReplicaSets.
-* **Service headless pour PostgreSQL** : permet le discovery entre réplicas si besoin ; attention : PostgreSQL en mode single-node ne se scale pas facilement.
-* **Mots de passe** : toujours gérer via Kubernetes **Secrets**, jamais en clair dans les manifests.
-* **Cache Redis** : configurez la persistence si vous avez besoin de données durables.
+Le projet inclut des politiques réseau avancées pour la sécurité :
+
+| Politique | Description |
+|-----------|-------------|
+| `deny-all` | Bloque tout trafic par défaut |
+| `allow-dns` | Autorise les requêtes DNS |
+| `allow-gateway-to-backend` | Gateway → Auth & User services |
+| `allow-backend-to-db` | Services → PostgreSQL |
+| `allow-ingress-postgres` | PostgreSQL accepte les connexions internes |
+| `allow-backend-to-redis` | Services → Redis |
+| `allow-ingress-redis` | Redis accepte les connexions internes |
 
 ---
 
-## Dépannage rapide
+## Variables d'Environnement
 
-* Voir les logs d’un pod :
+### Gateway Service
+
+| Variable | Défaut | Description |
+|----------|--------|-------------|
+| `PORT` | 3000 | Port du service |
+| `AUTH_SERVICE_URL` | http://auth-service:3001 | URL du service auth |
+| `USER_SERVICE_URL` | http://user-service:3002 | URL du service user |
+| `SESSION_SECRET` | gateway-secret | Secret de session |
+
+### Auth Service / User Service
+
+| Variable | Défaut | Description |
+|----------|--------|-------------|
+| `PORT` | 3001/3002 | Port du service |
+| `POSTGRES_USER` | postgres | Utilisateur PostgreSQL |
+| `POSTGRES_PASSWORD` | postgres | Mot de passe PostgreSQL |
+| `POSTGRES_DB` | testdb | Nom de la base |
+| `SESSION_SECRET` | ma_clef_ultra_complexe_123 | Secret de session |
+
+---
+
+## Routage
+
+| Route | Service | Description |
+|-------|---------|-------------|
+| `/` | Gateway → Auth | Page d'accueil |
+| `/login` | Gateway → Auth | Connexion |
+| `/signup` | Gateway → Auth | Inscription |
+| `/logout` | Gateway → Auth | Déconnexion |
+| `/dashboard` | Gateway → Auth | Tableau de bord (protégé) |
+| `/api/users` | Gateway → User | API utilisateurs |
+
+---
+
+## Dépannage
+
+### Voir les logs d'un pod
 
 ```bash
 kubectl logs <pod-name>
 ```
 
-* Décrire une ressource pour plus de détails :
+### Décrire une ressource
 
 ```bash
 kubectl describe pod <pod-name>
 ```
 
-* Supprimer et ré-appliquer un manifest :
+### Supprimer et ré-appliquer
 
 ```bash
-kubectl delete -f <file>
-kubectl apply -f <file>
+kubectl delete -f <fichier>
+kubectl apply -f <fichier>
+```
 
+### Redémarrer un service
 
+```bash
+kubectl rollout restart deployment/<nom-du-deployment>
+```
+
+### Vérifier les événements
+
+```bash
+kubectl get events --sort-by='.lastTimestamp'
+```
+
+---
+
+## Notes & Conseils
+
+- **ReplicaSet** gère la réplication, mais pas les rollouts automatiques. Utilisez **Deployment** pour cela.
+- **StatefulSet** est utilisé pour PostgreSQL (données persistantes).
+- Les mots de passe doivent toujours être gérés via **Kubernetes Secrets**.
+- Configurez la persistence Redis si vous avez besoin de données durables.
+- Les politiques réseau nécessitent un plugin CNI compatible (Calico, Cilium, etc.).
 

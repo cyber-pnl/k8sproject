@@ -1,22 +1,26 @@
+/**
+ * Pages Routes
+ * Handles page rendering (home, dashboard)
+ */
+
 const express = require("express");
 const router = express.Router();
 
 /**
- * LANDING PAGE (publique)
- * Accessible par tout le monde
+ * GET /
+ * Landing page (public)
  */
 router.get("/", (req, res) => {
   res.render("home", {
     title: "KubeLearn | Master Kubernetes",
-    description:
-      "The modern platform to learn Kubernetes from beginner to expert.",
+    description: "The modern platform to learn Kubernetes from beginner to expert.",
     user: req.session.user || null,
   });
 });
 
 /**
- * DASHBOARD (protege)
- * Redirige vers /login si pas connecte
+ * GET /dashboard
+ * Dashboard page (protected)
  */
 router.get("/dashboard", (req, res) => {
   if (!req.session.user) {
@@ -32,3 +36,4 @@ router.get("/dashboard", (req, res) => {
 });
 
 module.exports = router;
+

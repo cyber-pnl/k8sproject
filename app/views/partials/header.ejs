@@ -18,8 +18,14 @@
     </div>
 
     <div class="hidden items-center gap-3 md:flex">
-      <a href="#signin" class="rounded-lg px-4 py-2 text-sm text-kube-muted transition-colors hover:text-kube-heading hover:bg-kube-surface">Sign In</a>
-      <a href="#get-started" class="rounded-lg bg-kube-primary px-4 py-2 text-sm font-medium text-kube-bg transition-colors hover:bg-kube-primary/90">Get Started Free</a>
+      <% if (typeof user !== 'undefined' && user) { %>
+        <span class="text-sm text-kube-primary">Welcome, <%= user.username %></span>
+        <a href="/dashboard" class="rounded-lg px-4 py-2 text-sm text-kube-muted transition-colors hover:text-kube-heading hover:bg-kube-surface">Dashboard</a>
+        <a href="/logout" class="rounded-lg border border-kube-border px-4 py-2 text-sm text-kube-muted transition-colors hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400">Logout</a>
+      <% } else { %>
+        <a href="/login" class="rounded-lg px-4 py-2 text-sm text-kube-muted transition-colors hover:text-kube-heading hover:bg-kube-surface">Sign In</a>
+        <a href="/signup" class="rounded-lg bg-kube-primary px-4 py-2 text-sm font-medium text-kube-bg transition-colors hover:bg-kube-primary/90">Get Started Free</a>
+      <% } %>
     </div>
 
     <button id="mobile-menu-btn" class="text-kube-heading md:hidden" aria-label="Open menu">
@@ -35,8 +41,14 @@
       <a href="#pricing" class="text-sm text-kube-muted transition-colors hover:text-kube-heading">Pricing</a>
       <a href="#community" class="text-sm text-kube-muted transition-colors hover:text-kube-heading">Community</a>
       <div class="mt-4 flex flex-col gap-3">
-        <a href="#signin" class="rounded-lg border border-kube-border px-4 py-2 text-center text-sm text-kube-muted hover:text-kube-heading">Sign In</a>
-        <a href="#get-started" class="rounded-lg bg-kube-primary px-4 py-2 text-center text-sm font-medium text-kube-bg">Get Started Free</a>
+        <% if (typeof user !== 'undefined' && user) { %>
+          <span class="text-sm text-kube-primary">Welcome, <%= user.username %></span>
+          <a href="/dashboard" class="rounded-lg border border-kube-border px-4 py-2 text-center text-sm text-kube-muted hover:text-kube-heading">Dashboard</a>
+          <a href="/logout" class="rounded-lg border border-red-500/30 px-4 py-2 text-center text-sm text-red-400 hover:bg-red-500/10">Logout</a>
+        <% } else { %>
+          <a href="/login" class="rounded-lg border border-kube-border px-4 py-2 text-center text-sm text-kube-muted hover:text-kube-heading">Sign In</a>
+          <a href="/signup" class="rounded-lg bg-kube-primary px-4 py-2 text-center text-sm font-medium text-kube-bg">Get Started Free</a>
+        <% } %>
       </div>
     </div>
   </div>

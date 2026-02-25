@@ -10,8 +10,8 @@
         </svg>
         <span class="text-xl font-bold tracking-tight text-kube-heading">KubeLearn</span>
       </a>
-      <h1 class="mt-6 text-2xl font-bold text-kube-heading">Sign in to your account</h1>
-      <p class="mt-2 text-sm text-kube-muted">Don't have an account? <a href="/signup" class="text-kube-primary hover:underline">Sign up</a></p>
+      <h1 class="mt-6 text-2xl font-bold text-kube-heading">Create your account</h1>
+      <p class="mt-2 text-sm text-kube-muted">Already have an account? <a href="/login" class="text-kube-primary hover:underline">Sign in</a></p>
     </div>
 
     <!-- Error message -->
@@ -20,9 +20,15 @@
         <div class="flex items-center gap-2">
           <svg class="size-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           <% if (error === '1') { %>
-            Incorrect password. Please try again.
+            Please fill in all fields.
           <% } else if (error === '2') { %>
-            User not found. Please sign up first.
+            Passwords do not match.
+          <% } else if (error === '3') { %>
+            Password must be at least 6 characters.
+          <% } else if (error === '4') { %>
+            Username must be at least 3 characters.
+          <% } else if (error === '5') { %>
+            Username already exists. Please choose another.
           <% } else { %>
             An error occurred. Please try again.
           <% } %>
@@ -31,7 +37,7 @@
     <% } %>
 
     <!-- Form -->
-    <form action="/login" method="POST" class="rounded-xl border border-kube-border bg-kube-surface p-8">
+    <form action="/signup" method="POST" class="rounded-xl border border-kube-border bg-kube-surface p-8">
       <div class="flex flex-col gap-5">
 
         <!-- Username -->
@@ -47,10 +53,12 @@
               name="username"
               required
               autocomplete="username"
-              placeholder="your_username"
+              placeholder="choose_username"
+              minlength="3"
               class="w-full rounded-lg border border-kube-border bg-kube-bg py-2.5 pl-10 pr-4 text-sm text-kube-heading placeholder-kube-muted/50 outline-none transition-colors focus:border-kube-primary focus:ring-1 focus:ring-kube-primary"
             />
           </div>
+          <p class="mt-2 text-xs text-kube-muted">Username must be at least 3 characters</p>
         </div>
 
         <!-- Password -->
@@ -65,8 +73,8 @@
               id="password"
               name="password"
               required
-              autocomplete="current-password"
-              placeholder="your_password"
+              autocomplete="new-password"
+              placeholder="create_password"
               minlength="6"
               class="w-full rounded-lg border border-kube-border bg-kube-bg py-2.5 pl-10 pr-4 text-sm text-kube-heading placeholder-kube-muted/50 outline-none transition-colors focus:border-kube-primary focus:ring-1 focus:ring-kube-primary"
             />
@@ -74,12 +82,32 @@
           <p class="mt-2 text-xs text-kube-muted">Password must be at least 6 characters</p>
         </div>
 
+        <!-- Confirm Password -->
+        <div>
+          <label for="confirmPassword" class="mb-1.5 block text-sm font-medium text-kube-heading">Confirm Password</label>
+          <div class="relative">
+            <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-kube-muted">
+              <svg class="size-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+            </span>
+            <input
+              type="password"
+              id="confirmPassword"
+              name="confirmPassword"
+              required
+              autocomplete="new-password"
+              placeholder="confirm_password"
+              minlength="6"
+              class="w-full rounded-lg border border-kube-border bg-kube-bg py-2.5 pl-10 pr-4 text-sm text-kube-heading placeholder-kube-muted/50 outline-none transition-colors focus:border-kube-primary focus:ring-1 focus:ring-kube-primary"
+            />
+          </div>
+        </div>
+
         <!-- Submit -->
         <button
           type="submit"
           class="mt-2 w-full rounded-lg bg-kube-primary py-2.5 text-sm font-medium text-kube-bg transition-colors hover:bg-kube-primary/90"
         >
-          Sign In
+          Create Account
         </button>
       </div>
     </form>
@@ -94,3 +122,4 @@
 
   </div>
 </section>
+

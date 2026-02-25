@@ -1,0 +1,13 @@
+/**
+ * Users Module
+ * Export all users-related functionality
+ */
+
+const routes = require("./routes");
+const service = require("./service");
+
+module.exports = {
+  routes,
+  service,
+};
+
