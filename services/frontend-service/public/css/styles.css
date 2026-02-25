@@ -1,0 +1,40 @@
+html {
+  scroll-behavior: smooth;
+}
+
+.terminal-cursor {
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f1923;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #243352;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #38bdf8;
+}
+
+::selection {
+  background: rgba(56, 189, 248, 0.3);
+  color: #f1f5f9;
+}
+
+*:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 2px;
+  border-radius: 4px;
+}

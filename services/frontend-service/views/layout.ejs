@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0f1923" />
+  <title><%= typeof title !== 'undefined' ? title : 'KubeLearn | Master Kubernetes' %></title>
+  <meta name="description" content="<%= typeof description !== 'undefined' ? description : 'The modern platform to learn Kubernetes from beginner to expert.' %>" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            kube: {
+              bg: '#0f1923',
+              surface: '#162030',
+              card: '#1a2840',
+              border: '#243352',
+              muted: '#64748b',
+              text: '#e2e8f0',
+              heading: '#f1f5f9',
+              primary: '#38bdf8',
+              accent: '#2dd4bf',
+            },
+          },
+        },
+      },
+    }
+  </script>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body class="bg-kube-bg text-kube-text font-sans antialiased">
+  <%- include('partials/header') %>
+  <main>
+    <%- body %>
+  </main>
+  <%- include('partials/footer') %>
+  <script src="/js/main.js"></script>
+</body>
+</html>

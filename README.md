@@ -107,6 +107,10 @@ docker build -t user-service:latest .
 # Gateway Service
 cd services/gateway-service
 docker build -t gateway-service:latest .
+
+# Frontend Service
+cd services/frontend-service
+docker build -t frontend-service:latest .
 ```
 
 ### Avec Kind :

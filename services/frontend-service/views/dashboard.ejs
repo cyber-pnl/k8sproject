@@ -1,0 +1,157 @@
+<section class="pt-28 pb-20">
+  <div class="mx-auto max-w-7xl px-6">
+
+    <!-- Page header -->
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-kube-heading md:text-3xl">
+          Welcome back <span class="text-kube-primary"><%= currentUser.username %></span>
+        </h1>
+      </div>
+      <a href="/logout" class="inline-flex items-center gap-2 rounded-lg border border-kube-border px-4 py-2 text-sm text-kube-muted transition-colors hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400">
+        <svg class="size-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        Logout
+      </a>
+    </div>
+
+    <!-- Stats cards -->
+    <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="rounded-xl border border-kube-border bg-kube-surface p-5">
+        <div class="flex items-center justify-between">
+          <p class="text-sm text-kube-muted">Courses Enrolled</p>
+          <div class="flex size-9 items-center justify-center rounded-lg bg-kube-primary/10">
+            <svg class="size-4 text-kube-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+          </div>
+        </div>
+        <p class="mt-3 text-3xl font-bold text-kube-heading">4</p>
+      </div>
+      <div class="rounded-xl border border-kube-border bg-kube-surface p-5">
+        <div class="flex items-center justify-between">
+          <p class="text-sm text-kube-muted">Labs Completed</p>
+          <div class="flex size-9 items-center justify-center rounded-lg bg-kube-accent/10">
+            <svg class="size-4 text-kube-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          </div>
+        </div>
+        <p class="mt-3 text-3xl font-bold text-kube-heading">12</p>
+      </div>
+      <div class="rounded-xl border border-kube-border bg-kube-surface p-5">
+        <div class="flex items-center justify-between">
+          <p class="text-sm text-kube-muted">Hours Learned</p>
+          <div class="flex size-9 items-center justify-center rounded-lg bg-kube-primary/10">
+            <svg class="size-4 text-kube-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+        </div>
+        <p class="mt-3 text-3xl font-bold text-kube-heading">18h</p>
+      </div>
+      <div class="rounded-xl border border-kube-border bg-kube-surface p-5">
+        <div class="flex items-center justify-between">
+          <p class="text-sm text-kube-muted">Certificates</p>
+          <div class="flex size-9 items-center justify-center rounded-lg bg-kube-accent/10">
+            <svg class="size-4 text-kube-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          </div>
+        </div>
+        <p class="mt-3 text-3xl font-bold text-kube-heading">1</p>
+      </div>
+    </div>
+
+    <!-- My Courses -->
+    <div class="mt-10">
+      <h2 class="text-lg font-semibold text-kube-heading">My Courses</h2>
+      <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="rounded-xl border border-kube-border bg-kube-surface p-5">
+          <div class="flex items-center justify-between">
+            <span class="rounded-full bg-green-500/10 px-3 py-0.5 text-xs font-medium text-green-400">Beginner</span>
+            <span class="text-xs text-kube-muted">75%</span>
+          </div>
+          <h3 class="mt-3 text-sm font-semibold text-kube-heading">Kubernetes Fundamentals</h3>
+          <div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-kube-card">
+            <div class="h-full rounded-full bg-kube-primary" style="width: 75%"></div>
+          </div>
+          <p class="mt-3 text-xs text-kube-muted">18 / 24 lessons completed</p>
+        </div>
+        <div class="rounded-xl border border-kube-border bg-kube-surface p-5">
+          <div class="flex items-center justify-between">
+            <span class="rounded-full bg-yellow-500/10 px-3 py-0.5 text-xs font-medium text-yellow-400">Intermediate</span>
+            <span class="text-xs text-kube-muted">40%</span>
+          </div>
+          <h3 class="mt-3 text-sm font-semibold text-kube-heading">Helm & Package Management</h3>
+          <div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-kube-card">
+            <div class="h-full rounded-full bg-yellow-500" style="width: 40%"></div>
+          </div>
+          <p class="mt-3 text-xs text-kube-muted">7 / 18 lessons completed</p>
+        </div>
+        <div class="rounded-xl border border-kube-border bg-kube-surface p-5">
+          <div class="flex items-center justify-between">
+            <span class="rounded-full bg-red-500/10 px-3 py-0.5 text-xs font-medium text-red-400">Advanced</span>
+            <span class="text-xs text-kube-muted">10%</span>
+          </div>
+          <h3 class="mt-3 text-sm font-semibold text-kube-heading">CKA Exam Preparation</h3>
+          <div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-kube-card">
+            <div class="h-full rounded-full bg-red-400" style="width: 10%"></div>
+          </div>
+          <p class="mt-3 text-xs text-kube-muted">4 / 42 lessons completed</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin section (only visible to admins) -->
+    <% if (currentUser.role === 'admin') { %>
+      <div class="mt-10">
+        <h2 class="text-lg font-semibold text-kube-heading">Admin Panel</h2>
+        <div class="mt-4 rounded-xl border border-kube-border bg-kube-surface">
+          <div class="border-b border-kube-border px-6 py-4">
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-medium text-kube-heading">Registered Users</p>
+              <span class="rounded bg-kube-primary/10 px-2 py-0.5 text-xs font-medium text-kube-primary">Admin</span>
+            </div>
+          </div>
+          <div class="p-6">
+            <div id="admin-users-table">
+              <p class="text-sm text-kube-muted">Loading users...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        (async function() {
+          try {
+            const response = await fetch('/api/users');
+            const result = await response.json();
+            const users = result.data;
+            const container = document.getElementById('admin-users-table');
+
+            if (!users || users.length === 0) {
+              container.innerHTML = '<p class="text-sm text-kube-muted">No users found.</p>';
+              return;
+            }
+
+            let html = '<div class="overflow-x-auto">';
+            html += '<table class="w-full text-left text-sm">';
+            html += '<thead><tr class="border-b border-kube-border">';
+            html += '<th class="pb-3 pr-6 font-medium text-kube-muted">ID</th>';
+            html += '<th class="pb-3 pr-6 font-medium text-kube-muted">Username</th>';
+            html += '</tr></thead>';
+            html += '<tbody>';
+
+            users.forEach(function(user) {
+              html += '<tr class="border-b border-kube-border/50 last:border-0">';
+              html += '<td class="py-3 pr-6 font-mono text-xs text-kube-muted">' + user.id + '</td>';
+              html += '<td class="py-3 pr-6 text-kube-heading">' + user.username + '</td>';
+              html += '</tr>';
+            });
+
+            html += '</tbody></table></div>';
+            html += '<p class="mt-3 text-xs text-kube-muted">Source: ' + result.source + '</p>';
+
+            container.innerHTML = html;
+          } catch (err) {
+            document.getElementById('admin-users-table').innerHTML =
+              '<p class="text-sm text-red-400">Failed to load users.</p>';
+          }
+        })();
+      </script>
+    <% } %>
+
+  </div>
+</section>
