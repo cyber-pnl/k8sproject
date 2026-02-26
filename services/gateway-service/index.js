@@ -3,7 +3,7 @@
  * Port: 3000
  * Routes requests to appropriate microservices
  * Handles session management for all services
- * 
+ *
  * IMPORTANT: Gateway is the SINGLE source of truth for sessions.
  * All auth is handled here, and user info is passed to backend services via headers.
  */
@@ -39,11 +39,11 @@ app.use(
     secret: process.env.SESSION_SECRET || "kubelearn-secret-key-2024",
     resave: false,
     saveUninitialized: false,
-    cookie: { 
+    cookie: {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24, // 24 hours
-      sameSite: 'lax',
+      sameSite: "lax",
     },
   })
 );
@@ -55,45 +55,6 @@ app.use((req, res, next) => {
   res.locals.user = req.session.user || null;
   res.locals.currentUser = req.session.user || null;
   next();
-});
-
-// Helper function to create proxy options with user headers
-const createAuthProxyOptions = (targetPath) => ({
-  target: AUTH_SERVICE_URL,
-  changeOrigin: true,
-  pathRewrite: {
-    [`^/${targetPath}`]: `/${targetPath}`,
-  },
-  onProxyReq: (proxyReq, req) => {
-    // Pass session info to auth service
-    if (req.session && req.session.user) {
-      proxyReq.setHeader("x-user-id", req.session.user.id);
-      proxyReq.setHeader("x-user-name", req.session.user.username);
-      proxyReq.setHeader("x-user-role", req.session.user.role || "user");
-    }
-  },
-  onProxyRes: (proxyRes, req, res) => {
-    // After auth service processes, check if it set user info in response headers
-    // If so, set the session here in gateway
-    const userId = proxyRes.headers["x-user-id"];
-    const userName = proxyRes.headers["x-user-name"];
-    const userRole = proxyRes.headers["x-user-role"];
-    
-    if (userId && userName) {
-      req.session.user = {
-        id: userId,
-        username: userName,
-        role: userRole || "user",
-      };
-      req.session.save();
-    }
-    
-    // Handle redirect - preserve it
-    const redirectLocation = proxyRes.headers.location;
-    if (redirectLocation && redirectLocation.startsWith("/")) {
-      // Redirects are handled by the browser, session should be set before redirect
-    }
-  },
 });
 
 // ========================
@@ -109,13 +70,10 @@ app.post("/login", async (req, res) => {
   }
 
   try {
-    // Proxy to auth service for authentication
-    // We'll use a simpler approach: auth service returns JSON with result
-    
     const authResponse = await fetch(`${AUTH_SERVICE_URL}/auth/verify`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ username, password }),
     });
@@ -171,18 +129,17 @@ app.post("/signup", async (req, res) => {
   }
 
   try {
-    // Proxy to auth service for user creation
     const authResponse = await fetch(`${AUTH_SERVICE_URL}/auth/register`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ username, password, role: "user" }),
     });
 
     if (!authResponse.ok) {
       const errorData = await authResponse.json();
-      if (errorData.code === 'USER_EXISTS') {
+      if (errorData.code === "USER_EXISTS") {
         return res.redirect("/signup?error=5");
       }
       return res.redirect("/signup?error=1");
@@ -218,50 +175,43 @@ app.get("/logout", (req, res) => {
 });
 
 // ========================
-// FRONTEND PAGES - Proxy to frontend-service
+// API Routes (to User Service) - DOIT être avant le proxy "/"
 // ========================
-app.use("/", createProxyMiddleware({
-  target: FRONTEND_URL,
-  changeOrigin: true,
-  onProxyReq: (proxyReq, req) => {
-    // Pass session info to frontend service via headers
-    if (req.session && req.session.user) {
-      proxyReq.setHeader("x-user-id", req.session.user.id);
-      proxyReq.setHeader("x-user-role", req.session.user.role || "user");
-      proxyReq.setHeader("x-user-name", req.session.user.username);
-    }
-  },
-}));
+app.use(
+  "/api",
+  createProxyMiddleware({
+    target: USER_SERVICE_URL,
+    changeOrigin: true,
+    pathRewrite: {
+      "^/api": "",
+    },
+    onProxyReq: (proxyReq, req) => {
+      if (req.session && req.session.user) {
+        proxyReq.setHeader("x-user-id", req.session.user.id);
+        proxyReq.setHeader("x-user-role", req.session.user.role || "user");
+      }
+    },
+  })
+);
 
 // ========================
-// API Routes (to User Service)
+// FRONTEND PAGES - Proxy to frontend-service (DOIT être en dernier)
 // ========================
-app.use("/api", createProxyMiddleware({
-  target: USER_SERVICE_URL,
-  changeOrigin: true,
-  pathRewrite: {
-    "^/api": "", 
-  },
-  onProxyReq: (proxyReq, req) => {
-    // Pass user info from session
-    if (req.session && req.session.user) {
-      proxyReq.setHeader("x-user-id", req.session.user.id);
-      proxyReq.setHeader("x-user-role", req.session.user.role || "user");
-    }
-  },
-}));
-
-// ========================
-// ERROR HANDLING
-// ========================
-app.use((req, res) => {
-  res.status(404).send("Page not found");
-});
-
-app.use((err, req, res, next) => {
-  console.error("Gateway error:", err);
-  res.status(500).send("Erreur serveur");
-});
+app.use(
+  "/",
+  createProxyMiddleware({
+    target: FRONTEND_URL,
+    changeOrigin: true,
+    onProxyReq: (proxyReq, req) => {
+      // Pass session info to frontend service via headers
+      if (req.session && req.session.user) {
+        proxyReq.setHeader("x-user-id", req.session.user.id);
+        proxyReq.setHeader("x-user-role", req.session.user.role || "user");
+        proxyReq.setHeader("x-user-name", req.session.user.username);
+      }
+    },
+  })
+);
 
 // ========================
 // START SERVER
@@ -275,4 +225,3 @@ app.listen(port, () => {
 });
 
 module.exports = app;
-
