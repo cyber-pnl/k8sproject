@@ -50,12 +50,12 @@ async function startServer() {
     await initDatabase();
     
     if (!redisReady()) {
-      console.warn("⚠️  Redis not ready, caching disabled");
+      console.warn("Redis not ready, caching disabled");
     }
 
     const port = process.env.PORT || 3002;
     app.listen(port, () => {
-      console.log(`🚀 User Service running on port ${port}`);
+      console.log(` User Service running on port ${port}`);
     });
   } catch (err) {
     console.error("Failed to start User Service:", err);
