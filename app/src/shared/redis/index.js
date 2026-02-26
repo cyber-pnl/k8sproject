@@ -9,8 +9,8 @@ const redisClient = redis.createClient({
 
 // Connect on startup
 redisClient.connect()
-  .then(() => console.log("✅ Redis connected"))
-  .catch((err) => console.error("❌ Redis connection error:", err));
+.then(() => console.log("[OK] Redis connected"))
+  .catch((err) => console.error("[ERROR] Redis connection error:", err));
 
 /**
  * Get a value from cache

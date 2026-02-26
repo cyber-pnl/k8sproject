@@ -40,9 +40,9 @@ async function startServer() {
     });
     redisClient.on("error", (err) => console.error("Redis Client Error:", err));
     await redisClient.connect();
-    console.log(" Redis connected");
+    console.log("Redis connected");
   } catch (err) {
-    console.error(" Redis connection failed:", err);
+    console.error("Redis connection failed:", err);
     process.exit(1);
   }
 

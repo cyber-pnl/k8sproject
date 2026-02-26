@@ -19,7 +19,7 @@
 
     <div class="hidden items-center gap-3 md:flex">
       <% if (typeof user !== 'undefined' && user) { %>
-        <span class="text-sm text-kube-primary">Welcome, <%= user.username %></span>
+        <span class="text-sm text-kube-primary">Welcome <%= user.username %></span>
         <a href="/dashboard" class="rounded-lg px-4 py-2 text-sm text-kube-muted transition-colors hover:text-kube-heading hover:bg-kube-surface">Dashboard</a>
         <a href="/logout" class="rounded-lg border border-kube-border px-4 py-2 text-sm text-kube-muted transition-colors hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400">Logout</a>
       <% } else { %>
