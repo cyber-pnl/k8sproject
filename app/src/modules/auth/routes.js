@@ -74,6 +74,9 @@ router.post("/login", async (req, res) => {
       role: user.role,
     };
 
+    // Save session before redirect
+    await req.session.save();
+
     if (user.role === "admin") {
       return res.redirect("/dashboard");
     }
@@ -124,6 +127,9 @@ router.post("/signup", async (req, res) => {
       username: newUser.username,
       role: newUser.role,
     };
+
+    // Save session before redirect
+    await req.session.save();
 
     res.redirect("/");
   } catch (err) {

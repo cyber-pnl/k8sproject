@@ -69,8 +69,27 @@ app.use(
 // MIDDLEWARE - Pass user info to all views
 // ========================
 app.use((req, res, next) => {
-  res.locals.user = req.session.user || null;
-  res.locals.currentUser = req.session.user || null;
+  // First check if session has user (direct access)
+  if (req.session && req.session.user) {
+    res.locals.user = req.session.user;
+    res.locals.currentUser = req.session.user;
+  } 
+  // Check if user info was passed via headers from gateway
+  else if (req.headers['x-user-id'] && req.headers['x-user-name']) {
+    const userFromHeader = {
+      id: req.headers['x-user-id'],
+      username: req.headers['x-user-name'],
+      role: req.headers['x-user-role'] || 'user',
+    };
+    // Optionally restore session from headers
+    req.session.user = userFromHeader;
+    res.locals.user = userFromHeader;
+    res.locals.currentUser = userFromHeader;
+  }
+  else {
+    res.locals.user = null;
+    res.locals.currentUser = null;
+  }
   next();
 });
 
