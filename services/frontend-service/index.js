@@ -169,11 +169,8 @@ app.get("/logout", (req, res) => {
 // ERROR HANDLING
 // ========================
 app.use((req, res) => {
-  res.status(404).render("404", { 
-    title: "Page not found",
-    user: res.locals.user,
-    currentUser: res.locals.currentUser,
-  });
+  // On n'essaie plus de render une vue "404" qui n'existe pas
+  res.status(404).send("Page not found");
 });
 
 app.use((err, req, res, next) => {
@@ -187,10 +184,10 @@ app.use((err, req, res, next) => {
 async function startServer() {
   await initSessionStore();
 
-  // ✅ Les routes sont enregistrées après l'init de la session
+  //  Les routes sont enregistrées après l'init de la session
   const port = process.env.PORT || 3003;
   app.listen(port, () => {
-    console.log(`🚀 Frontend Service running on port ${port}`);
+    console.log(` Frontend Service running on port ${port}`);
   });
 }
 
