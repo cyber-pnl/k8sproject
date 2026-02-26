@@ -16,7 +16,7 @@ const pool = new Pool({
 async function initDatabase() {
   try {
     await pool.query("SELECT 1");
-    console.log("✅ PostgreSQL connected");
+    console.log("[OK] PostgreSQL connected");
 
     // Create users table
     await pool.query(`
@@ -29,9 +29,9 @@ async function initDatabase() {
       );
     `);
 
-    console.log("✅ Users table ready");
+    console.log("[OK] Users table ready");
   } catch (err) {
-    console.error("❌ PostgreSQL init error:", err);
+    console.error("[ERROR] PostgreSQL init error:", err);
     throw err;
   }
 }

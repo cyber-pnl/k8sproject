@@ -13,16 +13,16 @@ async function initRedis() {
     });
 
     client.on("error", (err) => console.error("Redis Client Error:", err));
-    client.on("connect", () => console.log("✅ Redis connected"));
+    client.on("connect", () => console.log("[OK] Redis connected"));
     client.on("ready", () => {
       isReadyFlag = true;
-      console.log("✅ Redis ready");
+      console.log("[OK] Redis ready");
     });
 
     await client.connect();
     return client;
   } catch (err) {
-    console.error("❌ Redis init error:", err);
+    console.error("[ERROR] Redis init error:", err);
     return null;
   }
 }

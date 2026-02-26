@@ -1,59 +1,52 @@
-# Projet Kubernetes — Microservices
+# KubeLearn - Kubernetes Learning Platform
 
-Ce dépôt contient une application microservices (Node.js/Express) avec PostgreSQL et Redis, déployée sur Kubernetes. Le projet a été conçu comme un projet pédagogique pour apprendre les microservices et Kubernetes.
-
-L'objectif : construire les images Docker, déployer les composants dans Kubernetes, et faire tourner chaque service avec 2 réplicas.
+Projet pedagogique microservices (Node.js/Express) avec PostgreSQL et Redis, deploye sur Kubernetes.
 
 ---
 
-## Architecture Microservices
+## Architecture
 
-L'**API Gateway** est le point d'entrée unique de l'application. Il reçoit toutes les requêtes des utilisateurs et les redirige vers les services appropriés.
+L'architecture comprend un API Gateway comme point d'entree unique et plusieurs microservices.
 
-### Pourquoi un Gateway ?
-
-1. **Point d'entrée unique** - Les utilisateurs accèdent à un seul endpoint (port 80/3000) au lieu de connaître tous les services
-2. **Routage** - Dirige les requêtes vers Auth Service ou User Service selon l'URL
-3. **Gestion de session** - Gère les sessions utilisateur avec express-session
-4. **Propagation des headers** - Transmet les infos utilisateur (x-user-id, x-user-role) aux services backend
-5. **Sécurité** - Cache l'architecture interne aux clients externes
-
-### Fonctionnement du Gateway
+### Diagramme de l'Architecture
 
 ```
-                                    ┌─────────────────────┐
-                                    │   Gateway Service  │
-                                    │      (Port 3000)   │
-                                    │   LoadBalancer :80 │
-                                    └──────────┬──────────┘
-                                               │
-                    ┌──────────────────────────┴──────────────────────────┐
-                    │                                                         │
-           ┌────────▼─────────┐                                    ┌────────▼─────────┐
-           │   Auth Service   │                                    │   User Service   │
-           │    (Port 3001)  │                                    │    (Port 3002)  │
-           │   2 Réplicas    │                                    │   2 Réplicas    │
-           └────────┬────────┘                                    └────────┬─────────┘
-                    │                                                      │
-                    └──────────────────────┬──────────────────────────────┘
-                                           │
-                    ┌──────────────────────┴──────────────────────┐
-                    │                                               │
-           ┌────────▼─────────┐                            ┌───────▼────────┐
-           │    PostgreSQL    │                            │     Redis     │
-           │    (Port 5432)   │                            │   (Port 6379) │
-           └──────────────────┘                            └───────────────┘
+                                    ┌─────────────────────────────────────┐
+                                    │         Gateway Service           │
+                                    │            (Port 3000)             │
+                                    │   Point d'entree, gestion session │
+                                    │         LoadBalancer :80           │
+                                    └─────────────────┬───────────────────┘
+                                                      │
+                          ┌───────────────────────────┼───────────────────────────┐
+                          │                           │                           │
+                 ┌────────▼─────────┐        ┌────────▼─────────┐        ┌────────▼─────────┐
+                 │  Auth Service   │        │  Frontend Service│        │  User Service    │
+                 │   (Port 3001)   │        │   (Port 3003)    │        │   (Port 3002)    │
+                 │ Authentification│        │   Rendu EJS      │        │  Gestion utilisateurs│
+                 └────────┬────────┘        └────────┬─────────┘        └────────┬─────────┘
+                          │                          │                           │
+                          └──────────────────────────┼───────────────────────────┘
+                                                   │
+                    ┌──────────────────────────────┴──────────────────────────────┐
+                    │                                                           │
+           ┌────────▼─────────┐                                     ┌────────────▼────────┐
+           │    PostgreSQL    │                                     │       Redis         │
+           │    (Port 5432)   │                                     │     (Port 6379)     │
+           │   Base de donnees│                                     │  Sessions & Cache   │
+           └──────────────────┘                                     └─────────────────────┘
 ```
 
 ### Services
 
 | Service | Port | Description |
 |---------|------|-------------|
-| Gateway Service | 3000 (ext: 80) | API Gateway, routage vers les microservices |
-| Auth Service | 3001 | Authentification (login, signup, logout) |
-| User Service | 3002 | Gestion des utilisateurs |
-| PostgreSQL | 5432 | Base de données relationnelle |
-| Redis | 6379 | Cache session |
+| Gateway Service | 3000 (ext: 80) | Point d'entree, routage, gestion de session centralisee |
+| Frontend Service | 3003 | Rendu des vues EJS (pages HTML) |
+| Auth Service | 3001 | Authentification (login, signup, logout), verification utilisateurs |
+| User Service | 3002 | API de gestion des utilisateurs |
+| PostgreSQL | 5432 | Base de donnees relationnelle |
+| Redis | 6379 | Stockage des sessions et cache |
 
 ---
 
@@ -61,49 +54,110 @@ L'**API Gateway** est le point d'entrée unique de l'application. Il reçoit tou
 
 ```
 .
-├── app/                      # Application monolithique originale (référence)
-├── services/                 # Code source des microservices
-│   ├── gateway-service/      # Service Gateway (port 3000)
-│   ├── auth-service/         # Service Authentification (port 3001)
-│   └── user-service/         # Service Utilisateurs (port 3002)
-├── k8s/                      # Manifests Kubernetes
-│   ├── services/             # Deployments et Services des microservices
-│   ├── postgres-*.yaml       # PostgreSQL (StatefulSet)
-│   ├── redis-*.yaml         # Redis (Deployment)
-│   └── network-policies.yaml # Politiques réseau
+├── app/                           # Application monolithique (version originale/reference)
+│   ├── src/
+│   │   ├── modules/              # Modules (auth, users, pages)
+│   │   ├── shared/               # Code partage (database, redis, middlewares)
+│   │   └── ...
+│   ├── views/                    # Vues EJS
+│   └── index.js                 # Point d'entree
+│
+├── services/                     # Code source des microservices
+│   ├── gateway-service/         # Service Gateway (port 3000)
+│   │   └── index.js             # Routage, session centralisee
+│   │
+│   ├── frontend-service/        # Service Frontend (port 3003)
+│   │   ├── views/               # Vues EJS (home, login, signup, dashboard)
+│   │   └── index.js             # Rendu des pages
+│   │
+│   ├── auth-service/            # Service Authentification (port 3001)
+│   │   └── src/
+│   │       ├── modules/auth/    # Routes et controleur auth
+│   │       └── shared/          # Database, Redis, middlewares
+│   │
+│   └── user-service/            # Service Utilisateurs (port 3002)
+│       └── src/
+│           ├── modules/users/    # Routes et service utilisateurs
+│           └── shared/          # Database, middlewares
+│
+├── k8s/                          # Manifests Kubernetes
+│   ├── auth-deployment.yaml     # Deploiement Auth Service
+│   ├── auth-service.yaml        # Service Auth
+│   ├── frontend-deployment.yaml # Deploiement Frontend
+│   ├── frontend-service.yaml    # Service Frontend
+│   ├── gateway-deployment.yaml  # Deploiement Gateway
+│   ├── gateway-service.yaml     # Service Gateway
+│   ├── user-deployment.yaml     # Deploiement User Service
+│   ├── user-service.yaml        # Service User
+│   ├── postgres-*.yaml          # PostgreSQL (StatefulSet)
+│   ├── redis-*.yaml             # Redis (Deployment)
+│   ├── app-secret.yaml          # Secrets applicatifs
+│   └── network-policies.yaml    # Politiques reseau
+│
+├── setup.sh                      # Script de demarrage automatique
 └── README.md
 ```
 
 ---
 
-## Prérequis
+
+
+### Processus de connexion:
+
+1. L'utilisateur soumet le formulaire de login/signup
+2. Le gateway recoit la requete et appelle l'auth-service via API REST
+3. L'auth-service verifie les identifiants et retourne les donnees utilisateur en JSON
+4. Le gateway definit la session utilisateur
+5. Le gateway transmet les infos utilisateur au frontend via des headers (x-user-id, x-user-name, x-user-role)
+6. Le frontend lit ces headers et affiche le header connecte
+
+### Headers transmis:
+
+| Header | Description |
+|--------|-------------|
+| x-user-id | ID de l'utilisateur |
+| x-user-name | Nom d'utilisateur |
+| x-user-role | Role (user/admin) |
+
+---
+
+## Prerequisites
 
 - Docker
-- `kubectl`
-- Minikube ou Kind (ou un cluster Kubernetes accessible)
-- Node.js et npm (pour exécuter localement)
+- kubectl
+- Minikube ou Kind (ou cluster Kubernetes)
+- Node.js et npm (developpement local)
+
+---
+
+## Script de Demarrage (setup.sh)
+
+Le projet inclut un script `setup.sh` qui automatise toute la configuration:
+
+```bash
+./setup.sh
+```
+
+Ce script:
+1. Demarre Minikube
+2. Configure Docker pour Minikube
+3. Construit toutes les images Docker
+4. Cree les secrets Kubernetes
+5. Deploie tous les services Kubernetes
 
 ---
 
 ## Construction des Images Docker
 
-### Avec Minikube (recommandé) :
+### Avec Minikube:
 
 ```bash
 eval $(minikube docker-env)
 ```
 
-### Construire chaque service :
+### Construire chaque service:
 
 ```bash
-# Auth Service
-cd services/auth-service
-docker build -t auth-service:latest .
-
-# User Service
-cd services/user-service
-docker build -t user-service:latest .
-
 # Gateway Service
 cd services/gateway-service
 docker build -t gateway-service:latest .
@@ -111,100 +165,51 @@ docker build -t gateway-service:latest .
 # Frontend Service
 cd services/frontend-service
 docker build -t frontend-service:latest .
+
+# Auth Service
+cd services/auth-service
+docker build -t auth-service:latest .
+
+# User Service
+cd services/user-service
+docker build -t user-service:latest .
 ```
 
-### Avec Kind :
+### Avec Kind:
 
 ```bash
-# Construire les images
+# Construire
+docker build -t gateway-service:latest ./services/gateway-service
+docker build -t frontend-service:latest ./services/frontend-service
 docker build -t auth-service:latest ./services/auth-service
 docker build -t user-service:latest ./services/user-service
-docker build -t gateway-service:latest ./services/gateway-service
 
 # Charger dans Kind
+kind load docker-image gateway-service:latest --name kind
+kind load docker-image frontend-service:latest --name kind
 kind load docker-image auth-service:latest --name kind
 kind load docker-image user-service:latest --name kind
-kind load docker-image gateway-service:latest --name kind
 ```
 
 ---
 
-## Installation de Minikube
+## Deploiement Kubernetes
 
-Minikube permet de créer un **cluster Kubernetes local**.
-
-### Prérequis
-
-- Virtualisation activée (VirtualBox, HyperKit, Hyper-V, KVM…)
-- `kubectl` installé :
-
-```bash
-kubectl version --client
-```
-
-### Installation
-
-#### Linux (Ubuntu/Debian)
-
-```bash
-curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-sudo install minikube-linux-amd64 /usr/local/bin/minikube
-minikube version
-```
-
-#### macOS (Homebrew)
-
-```bash
-brew install minikube
-minikube version
-```
-
-#### Windows (Chocolatey)
-
-```powershell
-choco install minikube
-minikube version
-```
-
-### Démarrer le cluster
-
-```bash
-minikube start
-kubectl get nodes
-```
-
-### Accéder au dashboard
-
-```bash
-minikube dashboard
-```
-
-### Arrêter et supprimer
-
-```bash
-minikube stop
-minikube delete
-```
-
----
-
-## Déploiement Kubernetes
-
-### 1. Créer les Secrets
+### 1. Creer les Secrets
 
 ```bash
 # Secret PostgreSQL
 kubectl create secret generic postgres-secret \
   --from-literal=POSTGRES_USER=postgres \
   --from-literal=POSTGRES_PASSWORD=postgres \
-  --from-literal=POSTGRES_DB=testdb
+  --from-literal=POSTGRES_DB=kubelearn
 
 # Secret Application
 kubectl create secret generic app-secret \
-  --from-literal=SESSION_SECRET=ma_clef_ultra_complexe_123
+  --from-literal=SESSION_SECRET=votre_clef_secrete_securisee
 ```
 
-### 2. Déployer PostgreSQL et Redis
+### 2. Deployer PostgreSQL et Redis
 
 ```bash
 kubectl apply -f k8s/postgres-statefulset.yaml
@@ -213,36 +218,14 @@ kubectl apply -f k8s/redis-deployment.yaml
 kubectl apply -f k8s/redis-service.yaml
 ```
 
-### 3. Déployer les Microservices
+### 3. Deployer les Microservices
 
 ```bash
-kubectl apply -f k8s/services/auth-service.yaml
-kubectl apply -f k8s/services/user-service.yaml
-kubectl apply -f k8s/services/gateway-service.yaml
+kubectl apply -f k8s/auth-deployment.yaml
+
 ```
 
-### 4. (Optionnel) Appliquer les Politiques Réseau
-
-```bash
-kubectl apply -f k8s/network-policies.yaml
-```
-
-### 5. Vérifier le déploiement
-
-```bash
-# Vérifier les ReplicaSets
-kubectl get rs
-
-# Vérifier les pods
-kubectl get pods
-
-# Vérifier les services
-kubectl get svc
-```
-
-> Vous devriez voir 2 réplicas par service microservice.
-
-### 6. Accéder à l'application
+### 4. Acceder a l'application
 
 ```bash
 minikube service gateway-service
@@ -250,19 +233,18 @@ minikube service gateway-service
 
 ---
 
-## Politiques Réseau (Network Policies)
+## Routage
 
-Le projet inclut des politiques réseau avancées pour la sécurité :
-
-| Politique | Description |
-|-----------|-------------|
-| `deny-all` | Bloque tout trafic par défaut |
-| `allow-dns` | Autorise les requêtes DNS |
-| `allow-gateway-to-backend` | Gateway → Auth & User services |
-| `allow-backend-to-db` | Services → PostgreSQL |
-| `allow-ingress-postgres` | PostgreSQL accepte les connexions internes |
-| `allow-backend-to-redis` | Services → Redis |
-| `allow-ingress-redis` | Redis accepte les connexions internes |
+| Route | Service | Description |
+|-------|---------|-------------|
+| GET / | Gateway -> Frontend | Page d'accueil |
+| GET /login | Gateway -> Frontend | Page connexion |
+| GET /signup | Gateway -> Frontend | Page inscription |
+| POST /login | Gateway -> Auth (API) | Traitement connexion |
+| POST /signup | Gateway -> Auth (API) | Traitement inscription |
+| GET /logout | Gateway | Deconnexion |
+| GET /dashboard | Gateway -> Frontend | Tableau de bord (protege) |
+| /api/* | Gateway -> User Service | API utilisateurs |
 
 ---
 
@@ -270,66 +252,50 @@ Le projet inclut des politiques réseau avancées pour la sécurité :
 
 ### Gateway Service
 
-| Variable | Défaut | Description |
+| Variable | Defaut | Description |
 |----------|--------|-------------|
-| `PORT` | 3000 | Port du service |
-| `AUTH_SERVICE_URL` | http://auth-service:3001 | URL du service auth |
-| `USER_SERVICE_URL` | http://user-service:3002 | URL du service user |
-| `SESSION_SECRET` | gateway-secret | Secret de session |
+| PORT | 3000 | Port du service |
+| AUTH_SERVICE_URL | http://auth-service:3001 | URL auth service |
+| USER_SERVICE_URL | http://user-service:3002 | URL user service |
+| FRONTEND_URL | http://frontend-service:3003 | URL frontend service |
+| SESSION_SECRET | - | Secret de session |
 
-### Auth Service / User Service
+### Frontend Service
 
-| Variable | Défaut | Description |
+| Variable | Defaut | Description |
 |----------|--------|-------------|
-| `PORT` | 3001/3002 | Port du service |
-| `POSTGRES_USER` | postgres | Utilisateur PostgreSQL |
-| `POSTGRES_PASSWORD` | postgres | Mot de passe PostgreSQL |
-| `POSTGRES_DB` | testdb | Nom de la base |
-| `SESSION_SECRET` | ma_clef_ultra_complexe_123 | Secret de session |
+| PORT | 3003 | Port du service |
+| REDIS_URL | redis://redis-service:6379 | URL Redis |
+
+### Auth Service
+
+| Variable | Defaut | Description |
+|----------|--------|-------------|
+| PORT | 3001 | Port du service |
+| POSTGRES_USER | postgres | Utilisateur PostgreSQL |
+| POSTGRES_PASSWORD | postgres | Mot de passe PostgreSQL |
+| POSTGRES_DB | kubelearn | Nom de la base |
+| REDIS_URL | redis://redis-service:6379 | URL Redis |
+| SESSION_SECRET | - | Secret de session |
 
 ---
 
-## Routage
 
-| Route | Service | Description |
-|-------|---------|-------------|
-| `/` | Gateway → Auth | Page d'accueil |
-| `/login` | Gateway → Auth | Connexion |
-| `/signup` | Gateway → Auth | Inscription |
-| `/logout` | Gateway → Auth | Déconnexion |
-| `/dashboard` | Gateway → Auth | Tableau de bord (protégé) |
-| `/api/users` | Gateway → User | API utilisateurs |
+## Depannage
 
----
-
-## Dépannage
-
-### Voir les logs d'un pod
+### Voir les logs:
 
 ```bash
 kubectl logs <pod-name>
 ```
 
-### Décrire une ressource
+### Redemarrer un service:
 
 ```bash
-kubectl describe pod <pod-name>
+kubectl rollout restart deployment/<nom-deployment>
 ```
 
-### Supprimer et ré-appliquer
-
-```bash
-kubectl delete -f <fichier>
-kubectl apply -f <fichier>
-```
-
-### Redémarrer un service
-
-```bash
-kubectl rollout restart deployment/<nom-du-deployment>
-```
-
-### Vérifier les événements
+### Verifier les evenements:
 
 ```bash
 kubectl get events --sort-by='.lastTimestamp'
@@ -337,11 +303,10 @@ kubectl get events --sort-by='.lastTimestamp'
 
 ---
 
-## Notes & Conseils
+## Notes
 
-- **ReplicaSet** gère la réplication, mais pas les rollouts automatiques. Utilisez **Deployment** pour cela.
-- **StatefulSet** est utilisé pour PostgreSQL (données persistantes).
-- Les mots de passe doivent toujours être gérés via **Kubernetes Secrets**.
-- Configurez la persistence Redis si vous avez besoin de données durables.
-- Les politiques réseau nécessitent un plugin CNI compatible (Calico, Cilium, etc.).
+- Le Gateway gere centralement les sessions - c'est le seul point qui definit req.session.user
+- Le Frontend Service lit les infos utilisateur depuis les headers transmis par le gateway
+- L'Auth Service ne fait que verifier les identifiants et retourner les donnees utilisateur en JSON
+- Le monolith (app/) est fourni pour reference et peut etre utilise independamment
 

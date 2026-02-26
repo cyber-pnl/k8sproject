@@ -28,7 +28,7 @@ async function initSessionStore() {
 
     const redisStore = new RedisStore({ client: redisClient });
 
-    // ✅ Session configurée ICI, après que Redis soit prêt
+    // Session configured HERE, after Redis is ready
     app.use(
       session({
         secret: process.env.SESSION_SECRET || "kubelearn-secret-key-2024",
@@ -44,7 +44,7 @@ async function initSessionStore() {
       })
     );
 
-    console.log("✅ Redis session store initialized");
+    console.log("Redis session store initialized");
   } catch (err) {
     console.error("Failed to initialize Redis session store:", err);
     // Fallback: session en mémoire sans Redis
