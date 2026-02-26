@@ -16,23 +16,51 @@ const app = express();
 // ========================
 // REDIS CLIENT FOR SESSIONS
 // ========================
-let redisStore = null;
 let redisClient = null;
 
 async function initSessionStore() {
   try {
-    // Create Redis client
     redisClient = createClient({
-      url: process.env.REDIS_URL || "redis://redis-service:6379"
+      url: process.env.REDIS_URL || "redis://redis-service:6379",
     });
-    redisClient.on('error', (err) => console.error('Redis Client Error', err));
+    redisClient.on("error", (err) => console.error("Redis Client Error", err));
     await redisClient.connect();
-    
-    redisStore = new RedisStore({ client: redisClient });
-    console.log(" Redis session store initialized");
+
+    const redisStore = new RedisStore({ client: redisClient });
+
+    // ✅ Session configurée ICI, après que Redis soit prêt
+    app.use(
+      session({
+        secret: process.env.SESSION_SECRET || "kubelearn-secret-key-2024",
+        resave: false,
+        saveUninitialized: false,
+        store: redisStore,
+        cookie: {
+          secure: process.env.NODE_ENV === "production",
+          httpOnly: true,
+          maxAge: 1000 * 60 * 60 * 24, // 24 hours
+          sameSite: "lax",
+        },
+      })
+    );
+
+    console.log("✅ Redis session store initialized");
   } catch (err) {
     console.error("Failed to initialize Redis session store:", err);
-    // Continue without Redis store
+    // Fallback: session en mémoire sans Redis
+    app.use(
+      session({
+        secret: process.env.SESSION_SECRET || "kubelearn-secret-key-2024",
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+          secure: false,
+          httpOnly: true,
+          maxAge: 1000 * 60 * 60 * 24,
+          sameSite: "lax",
+        },
+      })
+    );
   }
 }
 
@@ -49,44 +77,21 @@ app.set("layout", "layout");
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session configuration with Redis store - must be before routes
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET ,
-    resave: false,
-    saveUninitialized: false,
-    store: redisStore || undefined,
-    cookie: { 
-      secure: process.env.NODE_ENV === "production",
-      httpOnly: true,
-      maxAge: 1000 * 60 * 60 * 24, // 24 hours
-      sameSite: 'lax',
-    },
-  })
-);
-
 // ========================
-// MIDDLEWARE - Pass user info to all views
+// MIDDLEWARE - Lit les headers du gateway pour identifier l'utilisateur
+// Le gateway est la SEULE source de vérité pour la session
 // ========================
 app.use((req, res, next) => {
-  // First check if session has user (direct access)
-  if (req.session && req.session.user) {
-    res.locals.user = req.session.user;
-    res.locals.currentUser = req.session.user;
-  } 
-  // Check if user info was passed via headers from gateway
-  else if (req.headers['x-user-id'] && req.headers['x-user-name']) {
-    const userFromHeader = {
-      id: req.headers['x-user-id'],
-      username: req.headers['x-user-name'],
-      role: req.headers['x-user-role'] || 'user',
+  // Priorité aux headers envoyés par le gateway (source de vérité)
+  if (req.headers["x-user-id"] && req.headers["x-user-name"]) {
+    const userFromGateway = {
+      id: req.headers["x-user-id"],
+      username: req.headers["x-user-name"],
+      role: req.headers["x-user-role"] || "user",
     };
-    // Optionally restore session from headers
-    req.session.user = userFromHeader;
-    res.locals.user = userFromHeader;
-    res.locals.currentUser = userFromHeader;
-  }
-  else {
+    res.locals.user = userFromGateway;
+    res.locals.currentUser = userFromGateway;
+  } else {
     res.locals.user = null;
     res.locals.currentUser = null;
   }
@@ -102,72 +107,73 @@ app.get("/", (req, res) => {
   res.render("home", {
     title: "KubeLearn | Master Kubernetes",
     description: "The modern platform to learn Kubernetes",
-    user: req.session.user || null,
-    currentUser: req.session.user || null,
+    user: res.locals.user,
+    currentUser: res.locals.currentUser,
   });
 });
 
 // Dashboard page (requires auth)
 app.get("/dashboard", (req, res) => {
-  if (!req.session.user) {
+  if (!res.locals.user) {
     return res.redirect("/login");
   }
 
   res.render("dashboard", {
     title: "Dashboard | KubeLearn",
     description: "Your personal learning dashboard.",
-    user: req.session.user,
-    currentUser: req.session.user,
+    user: res.locals.user,
+    currentUser: res.locals.currentUser,
   });
 });
 
 // Login page
 app.get("/login", (req, res) => {
-  if (req.session.user) {
-    if (req.session.user.role === "admin") {
+  if (res.locals.user) {
+    if (res.locals.user.role === "admin") {
       return res.redirect("/dashboard");
     }
     return res.redirect("/");
   }
-  
+
   res.render("login", {
     title: "Login | KubeLearn",
     user: null,
     currentUser: null,
+    error: req.query.error || null,
   });
 });
 
 // Signup page
 app.get("/signup", (req, res) => {
-  if (req.session.user) {
-    if (req.session.user.role === "admin") {
+  if (res.locals.user) {
+    if (res.locals.user.role === "admin") {
       return res.redirect("/dashboard");
     }
     return res.redirect("/");
   }
-  
+
   res.render("signup", {
     title: "Signup | KubeLearn",
     user: null,
     currentUser: null,
+    error: req.query.error || null,
   });
 });
 
-// Logout
+// Logout - géré par le gateway, mais on garde la route au cas où
 app.get("/logout", (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      console.error("Session destruction error:", err);
-    }
-    res.redirect("/");
-  });
+  res.redirect("/logout");
 });
 
 // ========================
 // ERROR HANDLING
 // ========================
 app.use((req, res) => {
-  res.status(404).send("Page not found");
+  res.status(404).render("404", { 
+    title: "Page not found",
+    user: res.locals.user,
+    currentUser: res.locals.currentUser,
+  });
 });
 
 app.use((err, req, res, next) => {
@@ -180,7 +186,8 @@ app.use((err, req, res, next) => {
 // ========================
 async function startServer() {
   await initSessionStore();
-  
+
+  // ✅ Les routes sont enregistrées après l'init de la session
   const port = process.env.PORT || 3003;
   app.listen(port, () => {
     console.log(`🚀 Frontend Service running on port ${port}`);
