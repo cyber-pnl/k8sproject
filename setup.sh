@@ -24,7 +24,9 @@ kubectl create secret generic postgres-secret \
   --dry-run=client -o yaml | kubectl apply -f -
 
 kubectl create secret generic app-secret \
-  --from-literal=SESSION_SECRET=ma_clef_ultra_complexe_123 \
+  --from-literal=SESSION_SECRET=votre_clef_secrete_securisee
+  --from-literal=session-secret="your-super-secret-session-key-change-in-production" \
+  --from-literal=database-url="postgresql://postgres:postgres@postgres-service:5432/kubelearn"
   --dry-run=client -o yaml | kubectl apply -f -
 
 echo " Déploiement Kubernetes..."
