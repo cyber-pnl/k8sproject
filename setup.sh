@@ -16,6 +16,8 @@ docker build -t gateway-service:latest services/gateway-service
 docker build -t frontend-service:latest services/frontend-service
 
 echo " Création des secrets..."
+kubectl create secret generic admin-credentials \
+  --from-literal=admin-password="$(python3 -c "import bcrypt; print(bcrypt.hashpw(b'Adminappli@123', bcrypt.gensalt(10)).decode())")"
 
 kubectl create secret generic postgres-secret \
   --from-literal=POSTGRES_USER=postgres \
@@ -27,6 +29,7 @@ kubectl create secret generic app-secret \
   --from-literal=SESSION_SECRET=votre_clef_secrete_securisee
   --from-literal=session-secret="your-super-secret-session-key-change-in-production" \
   --from-literal=database-url="postgresql://postgres:postgres@postgres-service:5432/kubelearn"
+  --dry-run=client -o yaml | kubectl apply -f -
   --dry-run=client -o yaml | kubectl apply -f -
 
 echo " Déploiement Kubernetes..."

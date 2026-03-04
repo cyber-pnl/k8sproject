@@ -203,32 +203,27 @@ kubectl create secret generic postgres-secret \
   --from-literal=POSTGRES_USER=postgres \
   --from-literal=POSTGRES_PASSWORD=postgres \
   --from-literal=POSTGRES_DB=kubelearn
+kubectl create secret generic admin-credentials \
+  --from-literal=admin-password="$(python3 -c "import bcrypt; print(bcrypt.hashpw(b'Adminappli@123', bcrypt.gensalt(10)).decode())")"
 
 # Secret Application
 kubectl create secret generic app-secret \
   --from-literal=SESSION_SECRET=votre_clef_secrete_securisee
   --from-literal=session-secret="your-super-secret-session-key-change-in-production" \
   --from-literal=database-url="postgresql://postgres:postgres@postgres-service:5432/kubelearn"
+
   
 ```
 
-### 2. Deployer PostgreSQL et Redis
 
-```bash
-kubectl apply -f k8s/postgres-statefulset.yaml
-kubectl apply -f k8s/postgres-service.yaml
-kubectl apply -f k8s/redis-deployment.yaml
-kubectl apply -f k8s/redis-service.yaml
-```
-
-### 3. Deployer les Microservices
+### 2. Deployer les Microservices
 
 ```bash
 kubectl apply -f k8s/auth-deployment.yaml
 
 ```
 
-### 4. Acceder a l'application
+### 3. Acceder a l'application
 
 ```bash
 minikube service gateway-service

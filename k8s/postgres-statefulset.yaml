@@ -21,15 +21,23 @@ spec:
           envFrom:
             - secretRef:
                 name: postgres-secret
+          env:
+            - name: ADMIN_HASHED_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: admin-credentials
+                  key: admin-password
           volumeMounts:
             - name: postgres-storage
               mountPath: /var/lib/postgresql/data
             - name: init-script
-              mountPath: /docker-entrypoint-initdb.d
+              mountPath: /docker-entrypoint-initdb.d/init.sh
+              subPath: init.sh
       volumes:
         - name: init-script
           configMap:
             name: postgres-init-script
+            defaultMode: 0755
   volumeClaimTemplates:
     - metadata:
         name: postgres-storage
