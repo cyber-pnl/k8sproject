@@ -31,7 +31,7 @@ async function initSessionStore() {
     // Session configured HERE, after Redis is ready
     app.use(
       session({
-        secret: process.env.SESSION_SECRET || "kubelearn-secret-key-2024",
+        secret: process.env.SESSION_SECRET ,
         resave: false,
         saveUninitialized: false,
         store: redisStore,
@@ -50,7 +50,7 @@ async function initSessionStore() {
     // Fallback: session en mémoire sans Redis
     app.use(
       session({
-        secret: process.env.SESSION_SECRET || "kubelearn-secret-key-2024",
+        secret: process.env.SESSION_SECRET ,
         resave: false,
         saveUninitialized: false,
         cookie: {
