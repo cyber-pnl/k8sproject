@@ -53,7 +53,7 @@ async function startServer() {
   // ========================
   app.use(
     session({
-      secret: process.env.SESSION_SECRET || "kubelearn-secret-key-2024",
+      secret: process.env.SESSION_SECRET,
       resave: false,
       saveUninitialized: false,
       store: redisStore,
