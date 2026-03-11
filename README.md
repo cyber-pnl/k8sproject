@@ -245,6 +245,103 @@ minikube service gateway-service
 
 ---
 
+## Configuration GitHub Actions
+
+Ce projet utilise GitHub Actions pour le déploiement automatique sur un runner auto-hébergé (Minikube).
+
+### Prérequis
+
+- **Runner auto-hébergé** : Machine virtuelle ou serveur avec:
+  - Docker
+  - kubectl
+  - Minikube
+  - Accès au cluster Kubernetes
+
+### Configuration du Runner Auto-Hébergé
+
+1. **Télécharger et installer le runner**:
+   ```bash
+   # Créer le dossier
+   mkdir -p actions-runner && cd actions-runner
+   
+   # Télécharger
+   curl -o actions-runner.tar.gz -L https://github.com/actions/runner/releases/download/v2.315.0/actions-runner-linux-x64-2.315.0.tar.gz
+   
+   # Extraire
+   tar xzf actions-runner.tar.gz
+   
+   # Configurer (remplacer par votre organisation/repo)
+   ./config.sh --url https://github.com/VOTRE_COMPTE/VOTRE_REPO --token VOTRE_TOKEN
+   
+   # Démarrer le runner
+   ./run.sh
+   ```
+
+2. **Configurer les labels**:
+   - Label recommandé: `self-hosted`
+   - Le workflow utilise `runs-on: self-hosted`
+
+### Secrets GitHub à Configurer
+
+Dans votre repository GitHub, allez dans **Settings > Secrets and variables > Actions** et ajoutez:
+
+| Secret | Description | Exemple |
+|--------|-------------|---------|
+| `POSTGRES_USER` | Utilisateur PostgreSQL | `postgres` |
+| `POSTGRES_PASSWORD` | Mot de passe PostgreSQL | `postgres` |
+| `POSTGRES_DB` | Nom de la base de données | `kubelearn` |
+| `SESSION_SECRET` | Secret pour les sessions | `votre-secret-securise` |
+| `DATABASE_URL` | URL de connexion PostgreSQL | `postgresql://postgres:postgres@postgres-service:5432/kubelearn` |
+| `ADMIN_PASSWORD` | Mot de passe administrateur | `Adminappli@123` |
+
+### Déclenchement du Workflow
+
+Le workflow se déclenche **manuellement** via `workflow_dispatch`:
+
+1. Allez dans l'onglet **Actions** du repository
+2. Sélectionnez le workflow **"Deploy to Minikube"**
+3. Cliquez sur **"Run workflow"**
+4. Sélectionnez la branche (généralement `main`)
+5. Cliquez sur **"Run workflow"**
+
+### Étapes du Workflow
+
+Le workflow `main.yml` exécute les étapes suivantes:
+
+1. **Checkout** - Récupération du code source
+2. **Setup Minikube** - Installation et démarrage de Minikube
+3. **Configure Docker** - Configuration de Docker pour pointer vers Minikube
+4. **Build images** - Construction des 4 images Docker:
+   - `auth-service:latest`
+   - `user-service:latest`
+   - `gateway-service:latest`
+   - `frontend-service:latest`
+5. **Create Kubernetes secrets** - Création des secrets depuis GitHub secrets
+6. **Deploy to Kubernetes** - Déploiement des manifests `k8s/`
+7. **Wait for pods** - Vérification que tous les pods sont running
+
+### Structure du Workflow
+
+```yaml
+# Déclenchement manuel
+on:
+  workflow_dispatch:
+
+# Runner auto-hébergé
+runs-on: self-hosted
+
+# Étapes:
+# 1. Checkout code
+# 2. Setup Minikube
+# 3. Docker env config
+# 4. Build Docker images
+# 5. Create secrets
+# 6. kubectl apply
+# 7. Wait for pods
+```
+
+---
+
 ## Variables d'Environnement
 
 ### Gateway Service
