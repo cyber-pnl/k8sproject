@@ -32,7 +32,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: app-secret
-                  key: session-secret
+                  key: SESSION_SECRET
           resources:
             requests:
               memory: "64Mi"

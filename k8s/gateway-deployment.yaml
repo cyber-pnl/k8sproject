@@ -36,7 +36,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: app-secret
-                  key: session-secret
+                  key: SESSION_SECRET
             - name: NODE_ENV
               value: "production"
           resources:
