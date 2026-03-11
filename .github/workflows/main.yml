@@ -1,0 +1,62 @@
+# .github/workflows/deploy.yml
+name: Deploy to Minikube
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: self-hosted 
+
+    steps:
+      # 1 — Checkout du code
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2 — Installer Minikube
+      - name: Start Minikube
+        uses: medyagh/setup-minikube@latest
+
+      # 3 — Configurer Docker pour pointer vers Minikube
+      - name: Configure Minikube Docker env
+        run: eval $(minikube docker-env)
+
+      # 4 — Build des images
+      - name: Build images
+        run: |
+          eval $(minikube docker-env)
+          docker build -t auth-service:latest services/auth-service
+          docker build -t user-service:latest services/user-service
+          docker build -t gateway-service:latest services/gateway-service
+          docker build -t frontend-service:latest services/frontend-service
+
+      # 5 — Creer les secrets depuis les GitHub Secrets
+      - name: Create Kubernetes secrets
+        run: |
+          kubectl create secret generic postgres-secret \
+            --from-literal=POSTGRES_USER=${{ secrets.POSTGRES_USER }} \
+            --from-literal=POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
+            --from-literal=POSTGRES_DB=${{ secrets.POSTGRES_DB }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          kubectl create secret generic app-secret \
+            --from-literal=session-secret=${{ secrets.SESSION_SECRET }} \
+            --from-literal=database-url=${{ secrets.DATABASE_URL }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          kubectl create secret generic admin-credentials \
+            --from-literal=admin-password=${{ secrets.ADMIN_PASSWORD }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      # 6 — Deployer les manifests Kubernetes
+      - name: Deploy to Kubernetes
+        run: kubectl apply -f k8s/
+
+      # 7 — Verifier que les pods tournent
+      - name: Wait for pods
+        run: kubectl wait --for=condition=ready pod --all 
+```
+
+---
+
