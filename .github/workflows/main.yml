@@ -54,7 +54,7 @@ jobs:
       # 7 — Verifier que les pods tournent
       - name: Wait for pods
         run: kubectl wait --for=condition=ready pod --all 
-```
+
 
 ---
 
