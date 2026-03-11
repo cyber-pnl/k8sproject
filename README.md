@@ -208,8 +208,7 @@ kubectl create secret generic admin-credentials \
 
 # Secret Application
 kubectl create secret generic app-secret \
-  --from-literal=SESSION_SECRET=votre_clef_secrete_securisee
-  --from-literal=session-secret="your-super-secret-session-key-change-in-production" \
+  --from-literal=SESSION_SECRET="your-super-secret-session-key-change-in-production" \
   --from-literal=database-url="postgresql://postgres:postgres@postgres-service:5432/kubelearn"
 
   
