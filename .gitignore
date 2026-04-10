@@ -1,1 +1,22 @@
-app/node_modules/
+# Dependencies
+**/node_modules/
+**/*.log
+.env
+.DS_Store
+
+# Tests and coverage
+**/coverage/
+**/tests/
+**/jest.config.js
+
+# Builds
+dist/
+build/
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
