@@ -2,11 +2,37 @@
 name: Deploy to Minikube
 
 on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
 jobs:
-  deploy:
-    runs-on: self-hosted 
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [auth-service, user-service, gateway-service, frontend-service]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install
+        run: cd services/${{ matrix.service }} && npm ci
+
+      - name: Test
+        run: cd services/${{ matrix.service }} && npm test
+
+  deploy:
+    needs: test
+    runs-on: self-hosted 
+    if: github.ref == 'refs/heads/main'
     steps:
       # 1 — Checkout du code
       - name: Checkout
@@ -68,5 +94,4 @@ jobs:
         run: kubectl wait --for=condition=ready pod --all 
 
 
----
 
