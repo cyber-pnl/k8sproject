@@ -6,7 +6,6 @@
 
 # Tests and coverage
 **/coverage/
-**/tests/
 **/jest.config.js
 
 # Builds
