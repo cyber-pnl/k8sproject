@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         service: [auth-service, user-service]
-      fail-fast: true
+      fail-fast: false        # On veut voir les résultats de tous les services même si un échoue
 
     steps:
       - name: Checkout code
@@ -22,39 +22,48 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'               # Mise à jour recommandée (18 est ancienne)
           cache: 'npm'
           cache-dependency-path: 'services/${{ matrix.service }}/package-lock.json'
 
       - name: Install dependencies
         working-directory: services/${{ matrix.service }}
-        run: npm ci
+        run: npm ci --prefer-offline
 
-      - name: List test files
+      - name: Run tests with coverage + JUnit reporter
         working-directory: services/${{ matrix.service }}
-        run: find tests -name "*.test.js" -o -name "*.spec.js" || echo "No test files found"
+        run: |
+          npm run test:coverage -- \
+            --ci \
+            --reporters=default \
+            --reporters=jest-junit \
+            --coverage
+        env:
+          JEST_JUNIT_OUTPUT_DIR: ./coverage
+          JEST_JUNIT_OUTPUT_NAME: jest-report.xml
+          JEST_JUNIT_SUITE_NAME: "{title}"
+          JEST_JUNIT_CLASSNAME: "{classname}-{title}"
 
-      - name: Run tests with coverage
-        working-directory: services/${{ matrix.service }}
-        run: npm run test:coverage
-
-      - name: Upload coverage reports
-        uses: actions/upload-artifact@v4
+      - name: Publish Test Report (affichage clair dans GitHub)
+        if: always()
+        uses: mikepenz/action-junit-report@v4
         with:
-          name: coverage-${{ matrix.service }}
-          path: |
-            services/${{ matrix.service }}/coverage/
-            services/${{ matrix.service }}/coverage.lcov
-          retention-days: 30
+          report_paths: 'services/${{ matrix.service }}/coverage/jest-report.xml'
+          fail_on_failure: true
+          include_passed: false
+          detailed_summary: true
+          annotate_only: false
 
-      - name: Upload test results (JUnit)
+      - name: Upload coverage & test results (pour analyse approfondie)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results-${{ matrix.service }}
-          path: services/${{ matrix.service }}/jest-report.xml
-          retention-days: 30
-
+          path: |
+            services/${{ matrix.service }}/coverage/
+            services/${{ matrix.service }}/coverage.lcov
+            services/${{ matrix.service }}/coverage/jest-report.xml
+          retention-days: 14
   deploy:
     needs: test
     runs-on: self-hosted
