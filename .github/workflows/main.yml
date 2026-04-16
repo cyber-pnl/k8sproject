@@ -12,8 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [auth-service, user-service]  # Only services with tests; add others when ready
+        service: [auth-service, user-service]
       fail-fast: true
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -51,37 +52,43 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-results-${{ matrix.service }}
-          path: services/${{ matrix.service }}/jest-report.xml || true
+          path: services/${{ matrix.service }}/jest-report.xml
           retention-days: 30
 
   deploy:
     needs: test
     runs-on: self-hosted
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup and Start Minikube
         run: |
+          set -euo pipefail
+
           if ! command -v minikube &> /dev/null; then
-            echo "Minikube non trouve, installation..."
+            echo "Minikube non trouvé, installation..."
             curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
             sudo install minikube-linux-amd64 /usr/local/bin/minikube
             rm minikube-linux-amd64
-            echo "Minikube installe avec succes"
+            echo "Minikube installé avec succès"
           else
-            echo "Minikube deja installe — version : $(minikube version)"
+            echo "Minikube déjà installé — version : $(minikube version)"
           fi
 
-          echo "Demarrage de Minikube..."
+          echo "Démarrage de Minikube..."
           minikube start
 
       - name: Configure Minikube Docker env
-        run: eval $(minikube docker-env)
-
-      - name: Build images
         run: |
+          set -euo pipefail
+          eval $(minikube docker-env)
+
+      - name: Build Docker images
+        run: |
+          set -euo pipefail
           eval $(minikube docker-env)
           docker build -t auth-service:latest services/auth-service
           docker build -t user-service:latest services/user-service
@@ -90,21 +97,28 @@ jobs:
 
       - name: Create Kubernetes secrets
         run: |
+          set -euo pipefail
           kubectl create secret generic postgres-secret \
             --from-literal=POSTGRES_USER=${{ secrets.POSTGRES_USER }} \
             --from-literal=POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
             --from-literal=POSTGRES_DB=${{ secrets.POSTGRES_DB }} \
             --dry-run=client -o yaml | kubectl apply -f -
+
           kubectl create secret generic app-secret \
             --from-literal=SESSION_SECRET=${{ secrets.SESSION_SECRET }} \
             --from-literal=database-url=${{ secrets.DATABASE_URL }} \
             --dry-run=client -o yaml | kubectl apply -f -
+
           kubectl create secret generic admin-credentials \
             --from-literal=admin-password=${{ secrets.ADMIN_PASSWORD }} \
             --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Deploy to Kubernetes
-        run: kubectl apply -f k8s/
+        run: |
+          set -euo pipefail
+          kubectl apply -f k8s/
 
       - name: Wait for pods ready
-        run: kubectl wait --for=condition=ready pod --all --timeout=300s
+        run: |
+          set -euo pipefail
+          kubectl wait --for=condition=ready pod --all --timeout=300s
