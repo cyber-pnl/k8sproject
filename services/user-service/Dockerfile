@@ -2,11 +2,9 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies
-RUN npm install
+# Copy shared package files
+COPY ../shared/package*.json ./
+RUN npm ci --omit=dev
 
 # Copy source code
 COPY src ./src
