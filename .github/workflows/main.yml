@@ -11,23 +11,31 @@ env:
   REGISTRY: ghcr.io
   NODE_VERSION: '20'
 
+# Permissions globales minimales
+permissions:
+  contents: read
+  packages: write     # Pour push vers GHCR
+  checks: write       # Pour les rapports de tests (si tu réactives JUnit)
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  # ========== LINTING & CODE QUALITY ==========
+  # ========== LINTING ==========
   lint:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         service: [auth-service, user-service, gateway-service]
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: 'services/${{ matrix.service }}/package-lock.json'
 
       - name: Install dependencies
         working-directory: services/${{ matrix.service }}
@@ -35,34 +43,30 @@ jobs:
 
       - name: Run linting
         working-directory: services/${{ matrix.service }}
-        run: npm run lint --if-present || echo "No lint script defined"
+        run: npm run lint --if-present || echo "No lint script defined for ${{ matrix.service }}"
 
   # ========== TESTS & COVERAGE ==========
   test:
     needs: lint
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     strategy:
       matrix:
         service: [auth-service, user-service, gateway-service]
       fail-fast: false
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js with cache
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: 'services/${{ matrix.service }}/package-lock.json'
 
       - name: Install dependencies
         working-directory: services/${{ matrix.service }}
         run: npm ci --prefer-offline --legacy-peer-deps --verbose
 
-      - name: Run tests with coverage
+      - name: Run tests with coverage + JUnit
         working-directory: services/${{ matrix.service }}
         run: |
           npm run test:coverage -- \
@@ -70,9 +74,18 @@ jobs:
             --ci \
             --maxWorkers=2 \
             --coverage \
-            --coverageDirectory=./coverage
+            --coverageDirectory=./coverage \
+            --reporters=default \
+            --reporters=jest-junit
         env:
           CI: true
+          JEST_JUNIT_OUTPUT_DIR: ./coverage
+          JEST_JUNIT_OUTPUT_NAME: jest-report.xml
+
+      - name: Debug - List generated files
+        if: always()
+        working-directory: services/${{ matrix.service }}
+        run: ls -laR coverage/ || true
 
       - name: Upload coverage reports
         if: always()
@@ -90,15 +103,13 @@ jobs:
       matrix:
         service: [auth-service, user-service, gateway-service]
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: 'services/${{ matrix.service }}/package-lock.json'
 
       - name: Install dependencies
         working-directory: services/${{ matrix.service }}
@@ -106,9 +117,9 @@ jobs:
 
       - name: Run npm audit
         working-directory: services/${{ matrix.service }}
-        run: npm audit --audit-level=moderate || true
+        run: npm audit --audit-level=moderate || echo "Audit completed with warnings"
 
-  # ========== BUILD DOCKER IMAGES ==========
+  # ========== BUILD & PUSH DOCKER IMAGES ==========
   build:
     needs: test
     runs-on: ubuntu-latest
@@ -119,13 +130,12 @@ jobs:
       matrix:
         service: [auth-service, user-service, gateway-service, frontend-service]
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to Container Registry
+      - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -143,17 +153,16 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ========== DEPLOYMENT TO MINIKUBE ==========
+  # ========== DEPLOYMENT TO MINIKUBE (self-hosted) ==========
   deploy:
     needs: [test, build, security]
     runs-on: self-hosted
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: production
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Check Minikube health
+      - name: Check & Start Minikube
         run: |
           set -euo pipefail
           if ! command -v minikube &> /dev/null; then
@@ -162,61 +171,51 @@ jobs:
             sudo install minikube-linux-amd64 /usr/local/bin/minikube
             rm minikube-linux-amd64
           fi
-          minikube status || minikube start --cpus=4 --memory=8192
+          minikube status || minikube start --cpus=4 --memory=8192 --driver=docker
 
-      - name: Configure kubectl
+      - name: Configure Docker & kubectl for Minikube
         run: |
-          minikube kubectl -- version --client
           eval $(minikube docker-env --shell=bash)
           echo "DOCKER_HOST=$DOCKER_HOST" >> $GITHUB_ENV
+          minikube kubectl -- version --client
 
-      - name: Load Docker images into Minikube
+      - name: Pull images from GHCR into Minikube
         run: |
           eval $(minikube docker-env --shell=bash)
-          docker pull ${{ env.REGISTRY }}/${{ github.repository }}/auth-service:${{ github.sha }}
-          docker pull ${{ env.REGISTRY }}/${{ github.repository }}/user-service:${{ github.sha }}
-          docker pull ${{ env.REGISTRY }}/${{ github.repository }}/gateway-service:${{ github.sha }}
-          docker pull ${{ env.REGISTRY }}/${{ github.repository }}/frontend-service:${{ github.sha }}
+          for service in auth-service user-service gateway-service frontend-service; do
+            docker pull ${{ env.REGISTRY }}/${{ github.repository }}/$service:${{ github.sha }}
+            docker tag ${{ env.REGISTRY }}/${{ github.repository }}/$service:${{ github.sha }} $service:${{ github.sha }}
+          done
 
-      - name: Create namespaces
+      - name: Create namespace
         run: |
           kubectl create namespace production --dry-run=client -o yaml | kubectl apply -f -
           kubectl label namespace production name=production --overwrite
 
-      - name: Create and apply secrets
+      - name: Create secrets
         run: |
           kubectl create secret generic postgres-secret \
             --from-literal=POSTGRES_USER=${{ secrets.POSTGRES_USER }} \
             --from-literal=POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
             --from-literal=POSTGRES_DB=${{ secrets.POSTGRES_DB }} \
-            -n production \
-            --dry-run=client -o yaml | kubectl apply -f -
-          
+            -n production --dry-run=client -o yaml | kubectl apply -f -
+
           kubectl create secret generic app-secret \
             --from-literal=SESSION_SECRET=${{ secrets.SESSION_SECRET }} \
-            -n production \
-            --dry-run=client -o yaml | kubectl apply -f -
+            -n production --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Deploy to Kubernetes
         run: |
           kubectl apply -f k8s/ -n production
-          kubectl rollout status deployment -n production --timeout=5m
+          kubectl rollout status deployment --all -n production --timeout=5m
 
-      - name: Verify deployment health
+      - name: Verify deployment
         run: |
-          kubectl get pods -n production
-          kubectl get svc -n production
-          echo "Waiting for services to be ready..."
+          kubectl get pods,svc,ingress -n production
           kubectl wait --for=condition=ready pod --all -n production --timeout=300s || true
-
-      - name: Post-deployment checks
-        run: |
-          echo "Checking service endpoints..."
-          kubectl get ingress -n production || echo "No ingress configured"
-          kubectl describe nodes
 
       - name: Rollback on failure
         if: failure()
         run: |
-          echo "⚠️ Deployment failed, rolling back..."
-          kubectl rollout undo deployment -n production || true
+          echo "Deployment failed - Rolling back..."
+          kubectl rollout undo deployment --all -n production || true
