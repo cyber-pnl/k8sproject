@@ -1,10 +1,6 @@
 name: CI/CD Pipeline - Test & Deploy to Minikube
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -25,15 +21,17 @@ jobs:
           cache: 'npm'
           cache-dependency-path: 'services/shared/package-lock.json'
 
-      - name: Install dependencies
+      - name: Install dependencies from shared
+        run: |
+          cd services/shared
+          npm ci
         working-directory: services/${{ matrix.service }}
-        run: npm ci --prefer-offline --legacy-peer-deps
 
       - name: Run tests with coverage + JUnit reporter
         working-directory: services/${{ matrix.service }}
         run: |
           npm run test:coverage -- --passWithNoTests \
-            --ci \
+            --ci --prefer-offline\
             --reporters=default \
             --reporters=jest-junit \
             --coverage
