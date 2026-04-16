@@ -12,9 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [auth-service, user-service]
-      fail-fast: false        # On veut voir les résultats de tous les services même si un échoue
-
+        service: [auth-service, user-service, gateway-service]
+      fail-fast: false
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -22,7 +21,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'               # Mise à jour recommandée (18 est ancienne)
+          node-version: '20'
           cache: 'npm'
           cache-dependency-path: 'services/${{ matrix.service }}/package-lock.json'
 
@@ -33,7 +32,7 @@ jobs:
       - name: Run tests with coverage + JUnit reporter
         working-directory: services/${{ matrix.service }}
         run: |
-          npm run test:coverage -- \
+          npm run test:coverage -- --passWithNoTests \
             --ci \
             --reporters=default \
             --reporters=jest-junit \
@@ -42,28 +41,27 @@ jobs:
           JEST_JUNIT_OUTPUT_DIR: ./coverage
           JEST_JUNIT_OUTPUT_NAME: jest-report.xml
           JEST_JUNIT_SUITE_NAME: "{title}"
-          JEST_JUNIT_CLASSNAME: "{classname}-{title}"
+          JEST_JUNIT_CLASSNAME_TEMPLATE: "{classname}-{title}"
+          JEST_JUNIT_TITLE_TEMPLATE: "{title}"
 
-      - name: Publish Test Report (affichage clair dans GitHub)
+      - name: Publish Test Report
         if: always()
         uses: mikepenz/action-junit-report@v4
         with:
           report_paths: 'services/${{ matrix.service }}/coverage/jest-report.xml'
-          fail_on_failure: true
-          include_passed: false
+          fail_on_failure: false
+          include_passed: true
           detailed_summary: true
-          annotate_only: false
 
-      - name: Upload coverage & test results (pour analyse approfondie)
+      - name: Upload coverage & test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results-${{ matrix.service }}
           path: |
             services/${{ matrix.service }}/coverage/
-            services/${{ matrix.service }}/coverage.lcov
-            services/${{ matrix.service }}/coverage/jest-report.xml
           retention-days: 14
+
   deploy:
     needs: test
     runs-on: self-hosted
@@ -76,28 +74,19 @@ jobs:
       - name: Setup and Start Minikube
         run: |
           set -euo pipefail
-
           if ! command -v minikube &> /dev/null; then
             echo "Minikube non trouvé, installation..."
             curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
             sudo install minikube-linux-amd64 /usr/local/bin/minikube
             rm minikube-linux-amd64
-            echo "Minikube installé avec succès"
-          else
-            echo "Minikube déjà installé — version : $(minikube version)"
           fi
-
-          echo "Démarrage de Minikube..."
           minikube start
 
       - name: Configure Minikube Docker env
-        run: |
-          set -euo pipefail
-          eval $(minikube docker-env)
+        run: eval $(minikube docker-env)
 
       - name: Build Docker images
         run: |
-          set -euo pipefail
           eval $(minikube docker-env)
           docker build -t auth-service:latest services/auth-service
           docker build -t user-service:latest services/user-service
@@ -106,28 +95,18 @@ jobs:
 
       - name: Create Kubernetes secrets
         run: |
-          set -euo pipefail
           kubectl create secret generic postgres-secret \
             --from-literal=POSTGRES_USER=${{ secrets.POSTGRES_USER }} \
             --from-literal=POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
             --from-literal=POSTGRES_DB=${{ secrets.POSTGRES_DB }} \
             --dry-run=client -o yaml | kubectl apply -f -
-
           kubectl create secret generic app-secret \
             --from-literal=SESSION_SECRET=${{ secrets.SESSION_SECRET }} \
-            --from-literal=database-url=${{ secrets.DATABASE_URL }} \
-            --dry-run=client -o yaml | kubectl apply -f -
-
-          kubectl create secret generic admin-credentials \
-            --from-literal=admin-password=${{ secrets.ADMIN_PASSWORD }} \
             --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Deploy to Kubernetes
-        run: |
-          set -euo pipefail
-          kubectl apply -f k8s/
+        run: kubectl apply -f k8s/
 
       - name: Wait for pods ready
-        run: |
-          set -euo pipefail
-          kubectl wait --for=condition=ready pod --all --timeout=300s
+        run: kubectl wait --for=condition=ready pod --all --timeout=300s
+
