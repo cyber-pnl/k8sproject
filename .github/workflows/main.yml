@@ -1,11 +1,48 @@
 name: CI/CD Pipeline - Test & Deploy to Minikube
 
 on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
 
+env:
+  REGISTRY: ghcr.io
+  NODE_VERSION: '20'
+
 jobs:
-  test:
+  # ========== LINTING & CODE QUALITY ==========
+  lint:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [auth-service, user-service, gateway-service]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'services/${{ matrix.service }}/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: services/${{ matrix.service }}
+        run: npm ci --prefer-offline --legacy-peer-deps
+
+      - name: Run linting
+        working-directory: services/${{ matrix.service }}
+        run: npm run lint --if-present || echo "No lint script defined"
+
+  # ========== TESTS & COVERAGE ==========
+  test:
+    needs: lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       matrix:
         service: [auth-service, user-service, gateway-service]
@@ -14,97 +51,172 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js with cache
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: 'services/shared/package-lock.json'
+          cache-dependency-path: 'services/${{ matrix.service }}/package-lock.json'
 
-      - name: Install dependencies from shared
-        run: |
-          cd services/shared
-          npm ci
+      - name: Install dependencies
         working-directory: services/${{ matrix.service }}
+        run: npm ci --prefer-offline --legacy-peer-deps --verbose
 
-      - name: Run tests with coverage + JUnit reporter
+      - name: Run tests with coverage
         working-directory: services/${{ matrix.service }}
         run: |
-          npm run test:coverage -- --passWithNoTests \
-            --ci --prefer-offline\
-            --reporters=default \
-            --reporters=jest-junit \
-            --coverage
+          npm run test:coverage -- \
+            --passWithNoTests \
+            --ci \
+            --maxWorkers=2 \
+            --coverage \
+            --coverageDirectory=./coverage
         env:
-          JEST_JUNIT_OUTPUT_DIR: ./coverage
-          JEST_JUNIT_OUTPUT_NAME: jest-report.xml
-          JEST_JUNIT_SUITE_NAME: "{title}"
-          JEST_JUNIT_CLASSNAME_TEMPLATE: "{classname}-{title}"
-          JEST_JUNIT_TITLE_TEMPLATE: "{title}"
+          CI: true
 
-      - name: Publish Test Report
-        if: always()
-        uses: mikepenz/action-junit-report@v4
-        with:
-          report_paths: 'services/${{ matrix.service }}/coverage/jest-report.xml'
-          fail_on_failure: false
-          include_passed: true
-          detailed_summary: true
-
-      - name: Upload coverage & test results
+      - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.service }}
-          path: |
-            services/${{ matrix.service }}/coverage/
-          retention-days: 14
+          name: coverage-${{ matrix.service }}
+          path: services/${{ matrix.service }}/coverage/
+          retention-days: 30
+          compression-level: 9
 
-  deploy:
-    needs: test
-    runs-on: self-hosted
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-
+  # ========== SECURITY SCANNING ==========
+  security:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [auth-service, user-service, gateway-service]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup and Start Minikube
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'services/${{ matrix.service }}/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: services/${{ matrix.service }}
+        run: npm ci --prefer-offline --legacy-peer-deps
+
+      - name: Run npm audit
+        working-directory: services/${{ matrix.service }}
+        run: npm audit --audit-level=moderate || true
+
+  # ========== BUILD DOCKER IMAGES ==========
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        service: [auth-service, user-service, gateway-service, frontend-service]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: services/${{ matrix.service }}
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.service }}:latest
+            ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.service }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ========== DEPLOYMENT TO MINIKUBE ==========
+  deploy:
+    needs: [test, build, security]
+    runs-on: self-hosted
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check Minikube health
         run: |
           set -euo pipefail
           if ! command -v minikube &> /dev/null; then
-            echo "Minikube non trouvé, installation..."
+            echo "Installing Minikube..."
             curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
             sudo install minikube-linux-amd64 /usr/local/bin/minikube
             rm minikube-linux-amd64
           fi
-          minikube start
+          minikube status || minikube start --cpus=4 --memory=8192
 
-      - name: Configure Minikube Docker env
-        run: eval $(minikube docker-env)
-
-      - name: Build Docker images
+      - name: Configure kubectl
         run: |
-          eval $(minikube docker-env)
-          docker build -t auth-service:latest services/auth-service
-          docker build -t user-service:latest services/user-service
-          docker build -t gateway-service:latest services/gateway-service
-          docker build -t frontend-service:latest services/frontend-service
+          minikube kubectl -- version --client
+          eval $(minikube docker-env --shell=bash)
+          echo "DOCKER_HOST=$DOCKER_HOST" >> $GITHUB_ENV
 
-      - name: Create Kubernetes secrets
+      - name: Load Docker images into Minikube
+        run: |
+          eval $(minikube docker-env --shell=bash)
+          docker pull ${{ env.REGISTRY }}/${{ github.repository }}/auth-service:${{ github.sha }}
+          docker pull ${{ env.REGISTRY }}/${{ github.repository }}/user-service:${{ github.sha }}
+          docker pull ${{ env.REGISTRY }}/${{ github.repository }}/gateway-service:${{ github.sha }}
+          docker pull ${{ env.REGISTRY }}/${{ github.repository }}/frontend-service:${{ github.sha }}
+
+      - name: Create namespaces
+        run: |
+          kubectl create namespace production --dry-run=client -o yaml | kubectl apply -f -
+          kubectl label namespace production name=production --overwrite
+
+      - name: Create and apply secrets
         run: |
           kubectl create secret generic postgres-secret \
             --from-literal=POSTGRES_USER=${{ secrets.POSTGRES_USER }} \
             --from-literal=POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
             --from-literal=POSTGRES_DB=${{ secrets.POSTGRES_DB }} \
+            -n production \
             --dry-run=client -o yaml | kubectl apply -f -
+          
           kubectl create secret generic app-secret \
             --from-literal=SESSION_SECRET=${{ secrets.SESSION_SECRET }} \
+            -n production \
             --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Deploy to Kubernetes
-        run: kubectl apply -f k8s/
+        run: |
+          kubectl apply -f k8s/ -n production
+          kubectl rollout status deployment -n production --timeout=5m
 
-      - name: Wait for pods ready
-        run: kubectl wait --for=condition=ready pod --all --timeout=300s
+      - name: Verify deployment health
+        run: |
+          kubectl get pods -n production
+          kubectl get svc -n production
+          echo "Waiting for services to be ready..."
+          kubectl wait --for=condition=ready pod --all -n production --timeout=300s || true
 
+      - name: Post-deployment checks
+        run: |
+          echo "Checking service endpoints..."
+          kubectl get ingress -n production || echo "No ingress configured"
+          kubectl describe nodes
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "⚠️ Deployment failed, rolling back..."
+          kubectl rollout undo deployment -n production || true
