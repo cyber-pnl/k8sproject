@@ -1,4 +1,4 @@
-# KubeLearn - Kubernetes Learning Platform
+# KubeLearn - Kubernetes Learning Platform ( en maintien)
 
 Projet pedagogique microservices (Node.js/Express) avec PostgreSQL et Redis, deploye sur Kubernetes.
 
