@@ -41,12 +41,5 @@ function getClient() {
   return client;
 }
 
-// Auto-init
-initRedis();
-
-module.exports = {
-  initRedis,
-  isReady,
-  getClient,
-};
+module.exports = {\n  initRedis,\n  isReady,\n  getClient,\n};
 
