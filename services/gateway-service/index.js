@@ -31,22 +31,7 @@ app.use(express.urlencoded({ extended: true }));
 // ========================
 // START SERVER (async pour attendre Redis)
 // ========================
-async function startServer() {
-  // Connexion Redis
-  let redisClient;
-  try {
-    redisClient = createClient({
-      url: process.env.REDIS_URL || "redis://redis-service:6379",
-    });
-    redisClient.on("error", (err) => console.error("Redis Client Error:", err));
-    await redisClient.connect();
-    console.log("Redis connected");
-  } catch (err) {
-    console.error("Redis connection failed:", err);
-    process.exit(1);
-  }
-
-  const redisStore = new RedisStore({ client: redisClient });
+async function startServer() {\n  // Skip Redis in tests\n  if (process.env.NODE_ENV === 'test') {\n    const redisStore = new RedisStore({ client: null });\n  } else {\n    // Connexion Redis\n    let redisClient;\n    try {\n      redisClient = createClient({\n        url: process.env.REDIS_URL || "redis://redis-service:6379",\n      });\n      redisClient.on("error", (err) => console.error("Redis Client Error:", err));\n      await redisClient.connect();\n      console.log("Redis connected");\n    } catch (err) {\n      console.error("Redis connection failed:", err);\n      process.exit(1);\n    }\n\n    const redisStore = new RedisStore({ client: redisClient });\n  }\n\n
 
   // ========================
   // SESSION avec Redis store
