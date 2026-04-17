@@ -60,7 +60,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: services/${{ matrix.service }}
-        run: npm ci --prefer-offline --legacy-peer-deps --verbose
+        run: npm install
 
       - name: Run tests with coverage + JUnit
         working-directory: services/${{ matrix.service }}
