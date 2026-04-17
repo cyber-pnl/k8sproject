@@ -1,0 +1,21 @@
+{
+  "name": "k8sproject",
+  "version": "1.0.0",
+  "description": "Monorepo for Kubernetes microservices project",
+  "private": true,
+  "workspaces": [
+    "services/*"
+  ],
+  "scripts": {
+    "test:all": "npm run test:coverage --workspaces --if-present",
+    "lint:all": "npm run lint --workspaces --if-present",
+    "install:all": "npm install && npm run install --workspaces"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-junit": "^16.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
