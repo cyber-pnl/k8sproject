@@ -2,9 +2,7 @@ const request = require('supertest');
 const nock = require('nock');
 const { mock } = require('jest-mock-extended');
 
-const app = require('../index.js');
-
-describe('Gateway Service Tests', () => {
+jest.mock('redis');\n\n// Mock connect-redis\njest.mock('connect-redis');\n\nconst app = require('../index.js');\n\ndescribe('Gateway Service Tests', () => {\n  process.env.NODE_ENV = 'test';
   beforeAll(() => {
     // Mock process.env
     process.env.AUTH_SERVICE_URL = 'http://auth-service:3001';
