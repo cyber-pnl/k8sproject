@@ -13,29 +13,10 @@ const path = require("path");
 const app = express();
 
 // ========================
-// SERVICE URLs
+// SHARED SETUP FUNCTION - USED BY TEST AND PROD
 // ========================
-const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || "http://auth-service:3001";
-const USER_SERVICE_URL = process.env.USER_SERVICE_URL || "http://user-service:3002";
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://frontend-service:3003";
-
-// ========================
-// EXPRESS CONFIGURATION
-// ========================
-app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "views"));
-app.use(express.static(path.join(__dirname, "public")));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// ========================
-// START SERVER (async pour attendre Redis)
-// ========================
-async function startServer() {\n  // Skip Redis in tests\n  if (process.env.NODE_ENV === 'test') {\n    const redisStore = new RedisStore({ client: null });\n  } else {\n    // Connexion Redis\n    let redisClient;\n    try {\n      redisClient = createClient({\n        url: process.env.REDIS_URL || "redis://redis-service:6379",\n      });\n      redisClient.on("error", (err) => console.error("Redis Client Error:", err));\n      await redisClient.connect();\n      console.log("Redis connected");\n    } catch (err) {\n      console.error("Redis connection failed:", err);\n      process.exit(1);\n    }\n\n    const redisStore = new RedisStore({ client: redisClient });\n  }\n\n
-
-  // ========================
-  // SESSION avec Redis store
-  // ========================
+function commonSetup(redisStore) {
+  // SESSION
   app.use(
     session({
       secret: process.env.SESSION_SECRET,
@@ -43,7 +24,7 @@ async function startServer() {\n  // Skip Redis in tests\n  if (process.env.NODE
       saveUninitialized: false,
       store: redisStore,
       cookie: {
-        secure: false, // false car pas de HTTPS en local/k8s sans ingress TLS
+        secure: false,
         httpOnly: true,
         maxAge: 1000 * 60 * 60 * 24,
         sameSite: "lax",
@@ -51,17 +32,13 @@ async function startServer() {\n  // Skip Redis in tests\n  if (process.env.NODE
     })
   );
 
-  // ========================
   // MIDDLEWARE
-  // ========================
   app.use((req, res, next) => {
     res.locals.user = req.session.user || null;
     next();
   });
 
-  // ========================
-  // AUTH ROUTES
-  // ========================
+  // POST /login
   app.post("/login", async (req, res) => {
     const { username, password } = req.body;
 
@@ -105,6 +82,7 @@ async function startServer() {\n  // Skip Redis in tests\n  if (process.env.NODE
     }
   });
 
+  // POST /signup
   app.post("/signup", async (req, res) => {
     const { username, password, confirmPassword } = req.body;
 
@@ -144,6 +122,7 @@ async function startServer() {\n  // Skip Redis in tests\n  if (process.env.NODE
     }
   });
 
+  // GET /logout
   app.get("/logout", (req, res) => {
     req.session.destroy((err) => {
       if (err) console.error("Session destroy error:", err);
@@ -151,9 +130,7 @@ async function startServer() {\n  // Skip Redis in tests\n  if (process.env.NODE
     });
   });
 
-  // ========================
   // API Routes — AVANT le proxy "/"
-  // ========================
   app.use(
     "/api",
     createProxyMiddleware({
@@ -169,9 +146,7 @@ async function startServer() {\n  // Skip Redis in tests\n  if (process.env.NODE
     })
   );
 
-  // ========================
   // FRONTEND proxy — EN DERNIER
-  // ========================
   app.use(
     "/",
     createProxyMiddleware({
@@ -189,6 +164,51 @@ async function startServer() {\n  // Skip Redis in tests\n  if (process.env.NODE
       },
     })
   );
+}
+
+// ========================
+// SERVICE URLs
+// ========================
+
+const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || "http://auth-service:3001";
+const USER_SERVICE_URL = process.env.USER_SERVICE_URL || "http://user-service:3002";
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://frontend-service:3003";
+
+// ========================
+// EXPRESS CONFIGURATION
+// ========================
+app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "views"));
+app.use(express.static(path.join(__dirname, "public")));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// ========================
+  // START SERVER FOR TESTS (sync, no listen)
+  // ========================
+  async function startServer() {
+    const redisStore = new RedisStore({ client: null });
+    commonSetup(redisStore);
+    console.log('Test mode: server initialized without listening');
+  }
+
+  // Test env
+  if (process.env.NODE_ENV === 'test') {
+    startServer();
+  }
+
+
+// For prod async Redis + setup
+async function initProd() {
+  const redisClient = createClient({
+    url: process.env.REDIS_URL || "redis://redis-service:6379",
+  });
+  redisClient.on("error", (err) => console.error("Redis Client Error:", err));
+  await redisClient.connect();
+  console.log("Redis connected");
+
+  const redisStore = new RedisStore({ client: redisClient });
+  commonSetup(redisStore);
 
   const port = process.env.PORT || 3000;
   app.listen(port, () => {
@@ -199,6 +219,18 @@ async function startServer() {\n  // Skip Redis in tests\n  if (process.env.NODE
   });
 }
 
-startServer();
 
-module.exports = app;
+if (require.main === module) {
+  if (process.env.NODE_ENV === 'test') {
+    console.log('Test mode: sync setup complete');
+  } else {
+    initProd().catch(err => {
+      console.error("Startup failed:", err);
+      process.exit(1);
+    });
+  }
+}
+
+module.exports = { app, startServer };
+
+

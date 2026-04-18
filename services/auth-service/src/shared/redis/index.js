@@ -41,5 +41,8 @@ function getClient() {
   return client;
 }
 
-module.exports = {\n  initRedis,\n  isReady,\n  getClient,\n};
-
+module.exports = {
+  initRedis,
+  isReady,
+  getClient
+};

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="7" failures="0" errors="0" time="1.835">
-  <testsuite name="Users Service" errors="0" failures="0" skipped="0" timestamp="2026-04-16T13:49:47" time="0.557" tests="4">
-    <testcase classname="Users Service getAllUsers should return from cache if available" name="Users Service getAllUsers should return from cache if available" time="0.006">
+<testsuites name="jest tests" tests="7" failures="0" errors="0" time="0.487">
+  <testsuite name="Users Service" errors="0" failures="0" skipped="0" timestamp="2026-04-17T23:04:33" time="0.212" tests="4">
+    <testcase classname="Users Service getAllUsers should return from cache if available" name="Users Service getAllUsers should return from cache if available" time="0.003">
     </testcase>
     <testcase classname="Users Service getAllUsers should fetch from DB and cache if no cache" name="Users Service getAllUsers should fetch from DB and cache if no cache" time="0.001">
     </testcase>
@@ -10,12 +10,12 @@
     <testcase classname="Users Service deleteUser should delete user and invalidate cache" name="Users Service deleteUser should delete user and invalidate cache" time="0.001">
     </testcase>
   </testsuite>
-  <testsuite name="User Routes" errors="0" failures="0" skipped="0" timestamp="2026-04-16T13:49:47" time="1.106" tests="3">
-    <testcase classname="User Routes GET /api/users should return users from cache" name="User Routes GET /api/users should return users from cache" time="0.033">
+  <testsuite name="User Routes" errors="0" failures="0" skipped="0" timestamp="2026-04-17T23:04:34" time="0.225" tests="3">
+    <testcase classname="User Routes GET /api/users should return users from cache" name="User Routes GET /api/users should return users from cache" time="0.031">
     </testcase>
     <testcase classname="User Routes GET /api/users should return 500 on error" name="User Routes GET /api/users should return 500 on error" time="0.004">
     </testcase>
-    <testcase classname="User Routes DELETE /api/users/:id should delete user" name="User Routes DELETE /api/users/:id should delete user" time="0.003">
+    <testcase classname="User Routes DELETE /api/users/:id should delete user" name="User Routes DELETE /api/users/:id should delete user" time="0.004">
     </testcase>
   </testsuite>
 </testsuites>
