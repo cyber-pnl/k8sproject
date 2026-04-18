@@ -1,0 +1,73 @@
+name: CD - Build & Deploy to Minikube
+
+on:
+  workflow_run:
+    workflows: ["CI - Quality & Security"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch: # Pour pouvoir le lancer à la main
+
+env:
+  REGISTRY: ghcr.io
+  REGISTRY_BASE: ghcr.io/${{ github.repository }}
+
+jobs:
+  # On ne déploie que si la CI a réussi
+  build-and-push:
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        service: [auth-service, user-service, gateway-service, frontend-service]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: services/${{ matrix.service }}
+          push: true
+          tags: |
+            ${{ env.REGISTRY_BASE }}/${{ matrix.service }}:latest
+            ${{ env.REGISTRY_BASE }}/${{ matrix.service }}:${{ github.sha }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: self-hosted
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start Minikube (if down)
+        run: |
+          minikube status || minikube start --cpus=4 --memory=8192 --driver=docker
+
+      - name: Pull images into Minikube
+        run: |
+          eval $(minikube docker-env)
+          for service in auth-service user-service gateway-service frontend-service; do
+            docker pull ${{ env.REGISTRY_BASE }}/$service:${{ github.sha }}
+            docker tag ${{ env.REGISTRY_BASE }}/$service:${{ github.sha }} $service:${{ github.sha }}
+          done
+
+      - name: K8s Secrets & Apply
+        run: |
+          kubectl create namespace production --dry-run=client -o yaml | kubectl apply -f -
+          # Secrets (assure-toi que les secrets sont configurés dans GitHub Actions)
+          kubectl create secret generic postgres-secret \
+            --from-literal=POSTGRES_USER=${{ secrets.POSTGRES_USER }} \
+            --from-literal=POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
+            --from-literal=POSTGRES_DB=${{ secrets.POSTGRES_DB }} \
+            -n production --dry-run=client -o yaml | kubectl apply -f -
+          
+          kubectl apply -f k8s/ -n production
+          kubectl rollout status deployment --all -n production --timeout=5m

@@ -1,19 +1,14 @@
-FROM node:18-alpine
-
+FROM node:18-alpine AS deps
 WORKDIR /app
+COPY package.json ./
+RUN npm install --omit=dev
 
-# Copy shared package files
-COPY ../../shared/package*.json ./
-RUN npm ci --omit=dev
-
-# Copy source code
+FROM node:18-alpine
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY index.js ./
-COPY views ./views
 COPY public ./public
-
-# Expose port
+COPY views ./views
 EXPOSE 3003
-
-# Start command
 CMD ["node", "index.js"]
 

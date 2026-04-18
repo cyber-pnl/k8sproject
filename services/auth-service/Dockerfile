@@ -1,20 +1,15 @@
-FROM node:18-alpine
-
+FROM node:18-alpine AS deps
 WORKDIR /app
+COPY package.json ./
+RUN apk add --no-cache python3 make g++ \
+  && npm install --omit=dev \
+  && apk del python3 make g++
 
-# Copy shared package files
-COPY ../../shared/package*.json ./
-RUN npm ci --omit=dev
-
-# Install dependencies
-RUN npm install
-
-# Copy source code
+FROM node:18-alpine
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY src ./src
 COPY index.js ./
-# Expose port
 EXPOSE 3001
-
-# Start command
 CMD ["node", "index.js"]
 
