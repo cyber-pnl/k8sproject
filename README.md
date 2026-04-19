@@ -53,15 +53,6 @@ L'architecture comprend un API Gateway comme point d'entree unique et plusieurs 
 ## Structure du Projet
 
 ```
-.
-├── app/                           # Application monolithique (version originale/reference)
-│   ├── src/
-│   │   ├── modules/              # Modules (auth, users, pages)
-│   │   ├── shared/               # Code partage (database, redis, middlewares)
-│   │   └── ...
-│   ├── views/                    # Vues EJS
-│   └── index.js                 # Point d'entree
-│
 ├── services/                     # Code source des microservices
 │   ├── gateway-service/         # Service Gateway (port 3000)
 │   │   └── index.js             # Routage, session centralisee
