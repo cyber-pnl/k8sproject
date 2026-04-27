@@ -12,10 +12,10 @@ spec:
   ingressClassName: traefik
   tls:
   - hosts:
-    - 35.89.190.40
+    - 35.89.190.40.sslip.io
     secretName: projet-tls-secret # Le certificat généré sera stocké ici
   rules:
-  - host: 35.89.190.40
+  - host: 35.89.190.40.sslip.io
     http:
       paths:
       - path: /
