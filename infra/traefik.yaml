@@ -1,25 +1,27 @@
-apiVersion: argoproj.io/v1alpha1
-kind: Application
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
-  name: traefik
-  namespace: argocd
+  name: mon-projet-ingress
+  namespace: default # Assure-toi que c'est le namespace de ton gateway-service
+  annotations:
+    # On lie l'Ingress au cert-manager créé à l'étape 1
+    cert-manager.io/cluster-issuer: "selfsigned-issuer"
+    # On force Traefik à utiliser le port HTTPS (443)
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
 spec:
-  project: default
-  source:
-    chart: traefik
-    repoURL: https://traefik.github.io/charts
-    targetRevision: 34.0.0 # Utilise une version précise pour la stabilité
-    helm:
-      values: |
-        deployment:
-          kind: DaemonSet
-        service:
-          type: LoadBalancer
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: traefik # Il sera installé ici
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    createNamespace: true
+  ingressClassName: traefik
+  tls:
+  - hosts:
+    - 35.89.190.40
+    secretName: projet-tls-secret # Le certificat généré sera stocké ici
+  rules:
+  - host: 35.89.190.40
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: gateway-service # Le nom exact de ton service Kubernetes
+            port:
+              number: 3000
