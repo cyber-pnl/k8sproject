@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: Kubelearn-app
+  namespace: argocd # L'application ArgoCD doit être créée dans son namespace
+spec:
+  project: default
+  source:
+    # URL de ton dépôt GitHub
+    repoURL: https://github.com/cyber-pnl/k8sproject.git
+    # La branche à surveiller
+    targetRevision: HEAD
+    # Le chemin du dossier contenant TES fichiers YAML (ex: k8s/ ou manifests/)
+    path: 'k8s' 
+  destination:
+    # L'adresse du cluster local (toujours celle-ci pour le cluster où ArgoCD est installé)
+    server: 'https://kubernetes.default.svc'
+    # Le namespace où ton application sera déployée
+    namespace: default
+  syncPolicy:
+    automated: # Pour que la synchro soit automatique
+      prune: true # Supprime les ressources K8s si tu les supprimes de Git
+      selfHeal: true # Réapplique le Git si quelqu'un modifie le cluster à la main
+    syncOptions:
+    - CreateNamespace=true # Crée le namespace de destination s'il n'existe pas
