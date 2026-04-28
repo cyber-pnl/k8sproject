@@ -9,7 +9,7 @@ env:
 
 # Permissions globales minimales
 permissions:
-  contents: read
+  contents: write
   packages: write     # Pour push vers GHCR
   checks: write       # Pour les rapports de tests (si tu réactives JUnit)
 
