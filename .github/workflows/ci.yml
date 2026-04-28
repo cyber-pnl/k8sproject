@@ -114,7 +114,7 @@ jobs:
       - name: Run npm audit
         working-directory: services/${{ matrix.service }}
         run: npm audit --audit-level=moderate || echo "Audit completed with warnings"
-        
+
 # ========== BUILD & PUSH DOCKER IMAGES ==========
   build-push:
     needs: [test, security]
@@ -144,7 +144,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.service }}:latest
 
   # ========== UPDATE KUBERNETES MANIFESTS ==========
-  deploy:
+  delivery:
     needs: build-push
     runs-on: ubuntu-latest
     steps:
