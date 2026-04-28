@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: Kubelearn-app
+  name: kubelearn-app
   namespace: argocd # L'application ArgoCD doit être créée dans son namespace
 spec:
   project: default
