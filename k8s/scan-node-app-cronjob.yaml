@@ -11,8 +11,9 @@ spec:
           containers:
           - name: trivy-scan
             image: aquasec/trivy:latest
+            imagePullPolicy: IfNotPresent
             args:
               - image
-              - node-app
+              - ghcr.io/cyber-pnl/k8sproject/frontend-service:latest
           restartPolicy: Never
       backoffLimit: 2

@@ -18,8 +18,8 @@ spec:
     spec:
       containers:
         - name: frontend-service
-          image: frontend-service:latest
-          imagePullPolicy: Never
+          image: ghcr.io/cyber-pnl/k8sproject/frontend-service:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3003
               name: http
