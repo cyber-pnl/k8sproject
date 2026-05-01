@@ -1,0 +1,20 @@
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultConnection
+metadata:
+  name: hcp-vault-connection
+  namespace: default
+spec:
+  # Vérifie bien que l'URL commence par https:// et finit par :8200
+  address: https://vault-cluster-public-vault-7a8360dc.01151190.z1.hashicorp.cloud:8200
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: hcp-vault-auth
+  namespace: default
+spec:
+  method: token
+  mount: token
+  tokenSecretRef: 
+    name: vault-token # Parfois enveloppé dans un objet 'tokenSecretRef'
+  vaultConnectionRef: hcp-vault-connection
