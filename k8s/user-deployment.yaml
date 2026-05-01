@@ -2,9 +2,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: user-service
+  namespace: default
   labels:
     app: user-service
     tier: backend
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
 spec:
   replicas: 2
   selector:

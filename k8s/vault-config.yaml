@@ -3,6 +3,8 @@ kind: VaultStaticSecret
 metadata:
   name: admin-credentials
   namespace: default
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
 spec:
   vaultAuthRef: hcp-vault-auth
   mount: admin          # ← le nom de ton KV engine (le préfixe dans /v1/admin/kv → ici "admin")
@@ -18,6 +20,8 @@ kind: VaultStaticSecret
 metadata:
   name: app-secret
   namespace: default
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
 spec:
   vaultAuthRef: hcp-vault-auth
   mount: admin          # ← même KV engine que ci-dessus
@@ -34,6 +38,8 @@ kind: VaultStaticSecret
 metadata:
   name: postgres-secret
   namespace: default
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
 spec:
   vaultAuthRef: hcp-vault-auth
   mount: admin          # ← même KV engine

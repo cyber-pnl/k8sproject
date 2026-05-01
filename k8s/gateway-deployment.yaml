@@ -2,9 +2,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: gateway-service
+  namespace: default
   labels:
     app: gateway-service
     tier: gateway
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
 spec:
   replicas: 1
   selector:
