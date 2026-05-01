@@ -1,20 +1,44 @@
 apiVersion: secrets.hashicorp.com/v1beta1
-kind: VaultConnection
+kind: VaultStaticSecret
 metadata:
-  name: hcp-vault-connection
+  name: admin-credentials
   namespace: default
 spec:
-  # Vérifie bien que l'URL commence par https:// et finit par :8200
-  address: https://vault-cluster-public-vault-7a8360dc.01151190.z1.hashicorp.cloud:8200
+  vaultAuthRef: hcp-vault-auth
+  mount: admin          # ← le nom de ton KV engine (le préfixe dans /v1/admin/kv → ici "admin")
+  type: kv-v2
+  path: admin-credentials   # ← ce qui suit /data/ dans ton path
+  destination:
+    name: admin-credentials   # ← nom du Secret Kubernetes qui sera créé
+    create: true
+  
 ---
 apiVersion: secrets.hashicorp.com/v1beta1
-kind: VaultAuth
+kind: VaultStaticSecret
 metadata:
-  name: hcp-vault-auth
+  name: app-secret
   namespace: default
 spec:
-  method: token
-  mount: token
-  tokenSecretRef: 
-    name: vault-token # Parfois enveloppé dans un objet 'tokenSecretRef'
-  vaultConnectionRef: hcp-vault-connection
+  vaultAuthRef: hcp-vault-auth
+  mount: admin          # ← même KV engine que ci-dessus
+  type: kv-v2
+  path: app-secret      # ← ce qui suit /data/
+  destination:
+    name: app-secret      # ← nom du Secret Kubernetes qui sera créé
+    create: true
+
+---
+
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: postgres-secret
+  namespace: default
+spec:
+  vaultAuthRef: hcp-vault-auth
+  mount: admin          # ← même KV engine
+  type: kv-v2
+  path: postgres-secret     # ← ce qui suit /data/
+  destination:
+    name: postgres-secret     # ← nom du Secret Kubernetes qui sera créé
+    create: true
