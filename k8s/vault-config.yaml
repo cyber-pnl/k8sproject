@@ -3,45 +3,48 @@ kind: VaultStaticSecret
 metadata:
   name: admin-credentials
   namespace: default
- 
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
 spec:
   vaultAuthRef: hcp-vault-auth
-  mount: admin          # ← le nom de ton KV engine (le préfixe dans /v1/admin/kv → ici "admin")
+  mount: kv              # ← VÉRIFIE ce nom dans Vault UI > Secrets Engines
   type: kv-v2
-  path: admin-credentials   # ← ce qui suit /data/ dans ton path
+  path: admin-credentials
   destination:
-    name: admin-credentials   # ← nom du Secret Kubernetes qui sera créé
+    name: admin-credentials
     create: true
-  
+  refreshAfter: 1h
 ---
 apiVersion: secrets.hashicorp.com/v1beta1
 kind: VaultStaticSecret
 metadata:
   name: app-secret
   namespace: default
-
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
 spec:
   vaultAuthRef: hcp-vault-auth
-  mount: admin          # ← même KV engine que ci-dessus
+  mount: kv              # ← VÉRIFIE ce nom dans Vault UI > Secrets Engines
   type: kv-v2
-  path: app-secret      # ← ce qui suit /data/
+  path: app-secret
   destination:
-    name: app-secret      # ← nom du Secret Kubernetes qui sera créé
+    name: app-secret
     create: true
-
+  refreshAfter: 1h
 ---
-
 apiVersion: secrets.hashicorp.com/v1beta1
 kind: VaultStaticSecret
 metadata:
   name: postgres-secret
   namespace: default
-
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
 spec:
   vaultAuthRef: hcp-vault-auth
-  mount: admin          # ← même KV engine
+  mount: kv              # ← VÉRIFIE ce nom dans Vault UI > Secrets Engines
   type: kv-v2
-  path: postgres-secret     # ← ce qui suit /data/
+  path: postgres-secret
   destination:
-    name: postgres-secret     # ← nom du Secret Kubernetes qui sera créé
+    name: postgres-secret
     create: true
+  refreshAfter: 1h
