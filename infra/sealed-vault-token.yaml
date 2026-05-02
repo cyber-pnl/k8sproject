@@ -1,0 +1,15 @@
+---
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  creationTimestamp: null
+  name: vault-token
+  namespace: default
+spec:
+  encryptedData:
+    token: AgCDBebvavNduWrOjIwedlbIDbQ0X/oW4vivfVo0l12g3jX42iLFf4b1C909rleXhAB/w/lbGgkHZrKkjlzLSTz3E6RJSwP7h8DaUYdcNfg/g0gekyZSF53FybZNCYoMuBQv3+sNLx/RDef8eAW3cmwqO1F9lp+PbU0F6aG/f6YsiFl5gHdbMSi2zuzr2r0u/l/DOzCQL4l99/iMghomJcsaFCTs7hf/EXcs0aD+6gL7I1PzGzzh9sfN2pcyq6mesuZyirCvFSwLUzfNVGcjFtTGVYXTnw6Mr/sCUt21YQ7dnlL0A7vmbLVbnEibd9qswAGYcDdGqX0kZ9Kb61GepKnZfoH3vhzHPnp7J6FPEKdCxrtZWurpkhSypoHoWtcc81WCVJaJq9SAVMC/36zJLkvTWBmavA8/Ni2YvN2mEegsKi3qW8gb4M5VU6p0ChMbVBQo96wpkgVUoR40QwDZV1ToXqICXEx9eZWHRrDURpjyXv4RJ1f3itmLrVbkNBkUdCKMLDk0PgNn6baoHQFUonP604IyIejbn0DcZ4wlA87SyWJ9A2aIeNmS0AE1MmOnVGysaqoRpzk2RTh5She2WcyGFX6wxyzY4WuE/9wPSJ9IQtSLhZT/PhI4bXsN6038y5JQjf/kfzNOcDrpY8WyUf3D3AyFSP8tYxa7++g313GXlCYa0DFXCNzAJnaHZL5Go1WzOulhwvdVolQAQfLMxD6SD2pBTeoXfKAOtbHDVmLSGi3/qJre3EBq4X6ieCoIcwyI/Onk7f5THUVZsSbKG3P63gAi9WP7R/oHt6+/OHjnCBqYayhvygGE8NReacPkbT4uMQvylF8Jm16ovDI=
+  template:
+    metadata:
+      creationTimestamp: null
+      name: vault-token
+      namespace: default
