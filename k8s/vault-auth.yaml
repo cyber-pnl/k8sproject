@@ -3,22 +3,21 @@ kind: VaultConnection
 metadata:
   name: hcp-vault-connection
   namespace: default
- 
+  annotations:
 spec:
   address: https://vault-cluster-public-vault-7a8360dc.01151190.z1.hashicorp.cloud:8200
 ---
 apiVersion: secrets.hashicorp.com/v1beta1
 kind: VaultAuth
 metadata:
-  annotations:
-    argocd.argoproj.io/tracking-id: kubelearn-app:secrets.hashicorp.com/VaultAuth:default/hcp-vault-auth
   name: hcp-vault-auth
   namespace: default
+  annotations:
 spec:
   method: token
   mount: token
+  vaultConnectionRef: hcp-vault-connection
   token:
     secretKeyRef:
-      key: token
       name: vault-token
-  vaultConnectionRef: hcp-vault-connection
+      key: token
