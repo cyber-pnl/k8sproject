@@ -10,14 +10,15 @@ spec:
 apiVersion: secrets.hashicorp.com/v1beta1
 kind: VaultAuth
 metadata:
+  annotations:
+    argocd.argoproj.io/tracking-id: kubelearn-app:secrets.hashicorp.com/VaultAuth:default/hcp-vault-auth
   name: hcp-vault-auth
   namespace: default
-
 spec:
   method: token
   mount: token
-  vaultConnectionRef: hcp-vault-connection
   token:
     secretKeyRef:
-      name: vault-token   
       key: token
+      name: vault-token
+  vaultConnectionRef: hcp-vault-connection
