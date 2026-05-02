@@ -165,6 +165,18 @@ Le projet utilise **ArgoCD** pour le déploiement continu GitOps. Les manifests 
 - **Namespace** : `default`
 - **Auto-sync** : Activé avec `prune` et `selfHeal`
 
+### Annotations de Synchronisation
+
+Chaque manifest inclut l'annotation `argocd.argoproj.io/sync-wave` pour contrôler l'ordre de déploiement :
+
+```yaml
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+```
+
+Les ressources sont déployées en vague 4, permettant un contrôle précis de l'ordre d'application des manifests.
+
 ### Déploiement d'ArgoCD
 
 ```bash
@@ -253,7 +265,7 @@ Le projet utilise **Traefik** comme Ingress Controller avec **cert-manager** pou
 
 ---
 
-## 📦 Construction Locale (Développement)
+##  Construction Locale (Développement)
 
 ### Prérequis
 

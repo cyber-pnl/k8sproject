@@ -3,8 +3,7 @@ kind: VaultConnection
 metadata:
   name: hcp-vault-connection
   namespace: default
-  annotations:
-    argocd.argoproj.io/sync-wave: "2"
+ 
 spec:
   address: https://vault-cluster-public-vault-7a8360dc.01151190.z1.hashicorp.cloud:8200
 ---
@@ -13,8 +12,7 @@ kind: VaultAuth
 metadata:
   name: hcp-vault-auth
   namespace: default
-  annotations:
-    argocd.argoproj.io/sync-wave: "2"
+
 spec:
   method: token
   mount: token

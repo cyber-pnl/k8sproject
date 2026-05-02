@@ -3,8 +3,7 @@ kind: Service
 metadata:
   name: user-service
   namespace: default
-  annotations:
-    argocd.argoproj.io/sync-wave: "4"
+   
 spec:
   selector:
     app: user-service

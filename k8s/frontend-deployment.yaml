@@ -6,8 +6,7 @@ metadata:
   labels:
     app: frontend-service
     tier: frontend
-  annotations:
-    argocd.argoproj.io/sync-wave: "4"
+   
 spec:
   replicas: 2
   selector:
