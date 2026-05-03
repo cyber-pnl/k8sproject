@@ -12,12 +12,10 @@ kind: VaultAuth
 metadata:
   name: hcp-vault-auth
   namespace: default
-  annotations:
 spec:
   method: token
   mount: token
   vaultConnectionRef: hcp-vault-connection
-  token:
-    secretKeyRef:
+  tokenSecretRef:
       name: vault-token
       key: token
