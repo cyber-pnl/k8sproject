@@ -1,14 +1,14 @@
 apiVersion: secrets.hashicorp.com/v1beta1
 kind: VaultStaticSecret
 metadata:
-  name: admin-credentials
+  name: sync-admin-credentials
   namespace: default
  
 spec:
   vaultAuthRef: hcp-vault-auth
   mount: kv              # ← VÉRIFIE ce nom dans Vault UI > Secrets Engines
   type: kv-v2
-  path: /v1/admin/kv/data/admin-credentials
+  path: admin-credentials
   destination:
     name: admin-credentials
     create: true
@@ -16,14 +16,14 @@ spec:
 apiVersion: secrets.hashicorp.com/v1beta1
 kind: VaultStaticSecret
 metadata:
-  name: app-secret
+  name: sync-app-secret
   namespace: default
   
 spec:
   vaultAuthRef: hcp-vault-auth
   mount: kv              # ← VÉRIFIE ce nom dans Vault UI > Secrets Engines
   type: kv-v2
-  path: /v1/admin/kv/data/app-secret
+  path: app-secret
   destination:
     name: app-secret
     create: true
@@ -31,14 +31,14 @@ spec:
 apiVersion: secrets.hashicorp.com/v1beta1
 kind: VaultStaticSecret
 metadata:
-  name: postgres-secret
+  name: sync-postgres-secret
   namespace: default
   
 spec:
   vaultAuthRef: hcp-vault-auth
   mount: kv              # ← VÉRIFIE ce nom dans Vault UI > Secrets Engines
   type: kv-v2
-  path: /v1/admin/kv/data/postgres-secret
+  path: postgres-secret
   destination:
     name: postgres-secret
     create: true
