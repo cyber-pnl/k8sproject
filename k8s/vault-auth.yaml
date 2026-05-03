@@ -3,9 +3,9 @@ kind: VaultConnection
 metadata:
   name: hcp-vault-connection
   namespace: default
-  annotations:
 spec:
   address: https://vault-cluster-public-vault-7a8360dc.01151190.z1.hashicorp.cloud:8200
+  # caCertSecretRef: ""   # if needed
 ---
 apiVersion: secrets.hashicorp.com/v1beta1
 kind: VaultAuth
@@ -13,9 +13,11 @@ metadata:
   name: hcp-vault-auth
   namespace: default
 spec:
-  method: token
-  mount: token
   vaultConnectionRef: hcp-vault-connection
-  secretRef:
-      name: vault-token
-      key: token
+  method: kubernetes      # or jwt / approle
+  mount: kubernetes       # the auth mount path in Vault
+  kubernetes:
+    role: admin   # Vault Kubernetes auth role
+    serviceAccount: default # or your app's SA
+    # audiences: ["vault"]
+    # tokenExpirationSeconds: 600
