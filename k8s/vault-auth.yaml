@@ -5,7 +5,6 @@ metadata:
   namespace: default
 spec:
   address: https://vault-cluster-public-vault-7a8360dc.01151190.z1.hashicorp.cloud:8200
-  # caCertSecretRef: ""   # if needed
 ---
 apiVersion: secrets.hashicorp.com/v1beta1
 kind: VaultAuth
@@ -14,7 +13,8 @@ metadata:
   namespace: default
 spec:
   vaultConnectionRef: hcp-vault-connection
-  method: token
-  mount: token
-  tokenSpec:
-    name: vault-token  # Le nom du secret K8s que tu as créé avec ton token hvs...
+  method: kubernetes        # ← Change ici
+  mount: kubernetes         # ← Mount habituel pour kubernetes auth
+  kubernetes:
+    role: default-role       # ← IMPORTANT : le rôle que tu as créé dans Vault
+    serviceAccount: default  # ou vault-client si tu en as créé un
