@@ -22,11 +22,11 @@ spec:
             - secretRef:
                 name: postgres-secret
           env:
-            - name: ADMIN_HASHED_PASSWORD
+            - name: ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: admin-credentials
-                  key: admin-password
+                  key: ADMIN_PASSWORD
           volumeMounts:
             - name: postgres-storage
               mountPath: /var/lib/postgresql/data
