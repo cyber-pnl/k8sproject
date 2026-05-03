@@ -1,6 +1,9 @@
 name: CI Pipeline - Test 
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 env:
