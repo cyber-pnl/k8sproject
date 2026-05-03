@@ -14,10 +14,7 @@ metadata:
   namespace: default
 spec:
   vaultConnectionRef: hcp-vault-connection
-  method: kubernetes      # or jwt / approle
-  mount: kubernetes       # the auth mount path in Vault
-  kubernetes:
-    role: admin   # Vault Kubernetes auth role
-    serviceAccount: default # or your app's SA
-    # audiences: ["vault"]
-    # tokenExpirationSeconds: 600
+  method: token
+  mount: token
+  tokenSpec:
+    name: vault-token  # Le nom du secret K8s que tu as créé avec ton token hvs...
