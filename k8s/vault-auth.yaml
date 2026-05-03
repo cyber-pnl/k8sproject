@@ -16,6 +16,6 @@ spec:
   method: token
   mount: token
   vaultConnectionRef: hcp-vault-connection
-  tokenSecretRef:
+  secretRef:
       name: vault-token
       key: token
