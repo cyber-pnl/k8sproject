@@ -1,24 +1,25 @@
 {
-  "name": "frontend-service",
+  "name": "k8sproject",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "Monorepo for Kubernetes microservices project",
+  "private": true,
+  "workspaces": [
+    "services/*"
+  ],
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
-    "lint": "eslint ."
-  },
-  "dependencies": {
-    "express": "^4.19.2",
-    "ejs": "^3.1.10",
-    "express-ejs-layouts": "^2.5.1",
-    "express-session": "^1.18.0",
-    "connect-redis": "^7.1.1",
-    "redis": "^4.7.0"
+    "test:all": "npm run test:coverage --workspaces --if-present",
+    "lint:all": "npm run lint --workspaces --if-present",
+    "install:all": "npm install && npm run install --workspaces"
   },
   "devDependencies": {
-    "eslint": "^8.57.0"
+    "jest": "^29.7.0",
+    "jest-junit": "^16.0.0"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "express-session": "^1.19.0",
+    "redis": "^5.12.1"
   }
 }
