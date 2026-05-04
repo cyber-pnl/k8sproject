@@ -19,3 +19,7 @@ build/
 # OS
 Thumbs.db
 .DS_Store
+
+.terraform/
+*.tfstate
+*.tfstate.backup
