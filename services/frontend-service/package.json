@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "express": "^5.2.1",
+    "express-ejs-layouts": "^2.5.1",
     "express-session": "^1.19.0",
     "redis": "^5.12.1"
   }
