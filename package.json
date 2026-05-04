@@ -19,6 +19,7 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
+    "connect-redis": "^9.0.0",
     "express-session": "^1.19.0",
     "redis": "^5.12.1"
   }
