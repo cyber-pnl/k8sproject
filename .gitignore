@@ -1,59 +1,94 @@
 # Dependencies
 **/node_modules/
-**/*.log
-.env
-.DS_Store
+**/.pnp
+**/.pnp.js
+**/yarn-error.log
+**/npm-debug.log*
 
-# Tests and coverage
-**/coverage/
-**/jest.config.js
-
-# Builds
-dist/
-build/
-
-# IDE
-.vscode/settings.json
-.idea/
-
-# OS
-Thumbs.db
-.DS_Store
-
-# Terraform core
-.terraform/
-.terraform.lock.hcl
-
-# State files (TRÈS SENSIBLES)
-*.tfstate
-*.tfstate.*
-crash.log
-
-# Variables sensibles
-*.tfvars
-*.tfvars.json
-
-# Override files
-override.tf
-override.tf.json
-*_override.tf
-*_override.tf.json
-
-# CLI config files
-.terraformrc
-terraform.rc
+# Environment variables
+**/.env*
+!.env.example
 
 # Logs
-*.log
+**/*.log
+crash.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
 
-# Plan files (souvent oubliés)
-*.tfplan
+.DS_Store
+Thumbs.db
+ehthumbs.db
+ehthumbs_vi.db
 
-# Provider binaries (au cas où)
-**/.terraform/*
+# IDE / Editor
+.vscode/
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
 
-# Terraform Cloud / local cache
+# Builds / Dist
+dist/
+build/
+out/
+.next/
+
+# Tests / Coverage / Mocks
+**/coverage/
+**/coverage-*/
+**/__mocks__/
+**/*.jest-snapshot
+jest-report*.xml
+.nyc_output/
+**/*.lcov
+**/test-results/
+**/jest-results/
+
+# Node modules config (keep package-lock)
+# package-lock.json is committed for reproducible installs
+
+# Docker
+.dockerignore
+**/.dockerignore
+
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
 terraform.tfstate.d/
-
-# Terragrunt (si utilisé)
+.crash.log
+crash.log
+*.tfplan
+*.tfplan.binary
+.provider.lock.hcl
+.override.tf
+*_override.tf
+override.tf.json
+*_override.tf.json
+.tfenv/
 .terragrunt-cache/
+**/.terraform/providers/
+terraform/environments/prod/.terraform/providers/registry.terraform.io/hashicorp/aws/6.43.0/linux_amd64/terraform-provider-aws_v6.43.0_x5
+# OS generated
+.DS_Store?
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+logs/
+log/
+tmp/
+temp/
+
