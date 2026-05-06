@@ -12,22 +12,18 @@ variable "vpc_cidr" {
 
 variable "k3s_server_instance_type" {
   type    = string
-  default = "t3.medium"
 }
 
 variable "k3s_agent_instance_type" {
   type    = string
-  default = "t3.small"
 }
 
 variable "k3s_server_asg_min" {
   type    = number
-  default = 3
 }
 
 variable "k3s_agent_asg_min" {
   type    = number
-  default = 2
 
   validation {
     condition     = var.k3s_agent_asg_min >= 1
@@ -37,7 +33,6 @@ variable "k3s_agent_asg_min" {
 
 variable "project_name" {
   type    = string
-  default = "k3sproject"
 }
 
 variable "environment" {
