@@ -11,19 +11,19 @@ variable "vpc_cidr" {
 }
 
 variable "k3s_server_instance_type" {
-  type    = string
+  type = string
 }
 
 variable "k3s_agent_instance_type" {
-  type    = string
+  type = string
 }
 
 variable "k3s_server_asg_min" {
-  type    = number
+  type = number
 }
 
 variable "k3s_agent_asg_min" {
-  type    = number
+  type = number
 
   validation {
     condition     = var.k3s_agent_asg_min >= 1
@@ -32,7 +32,7 @@ variable "k3s_agent_asg_min" {
 }
 
 variable "project_name" {
-  type    = string
+  type = string
 }
 
 variable "environment" {
