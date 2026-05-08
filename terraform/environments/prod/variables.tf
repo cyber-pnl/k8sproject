@@ -14,22 +14,6 @@ variable "k3s_server_instance_type" {
   type = string
 }
 
-variable "k3s_agent_instance_type" {
-  type = string
-}
-
-variable "k3s_server_asg_min" {
-  type = number
-}
-
-variable "k3s_agent_asg_min" {
-  type = number
-
-  validation {
-    condition     = var.k3s_agent_asg_min >= 1
-    error_message = "Minimum 1 agent node."
-  }
-}
 
 variable "project_name" {
   type = string
