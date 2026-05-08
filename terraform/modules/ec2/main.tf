@@ -125,10 +125,9 @@ resource "aws_instance" "k3s_server" {
 
   key_name = var.key_name
 
-  user_data = base64encode(templatefile("${path.module}/k3s-user-data.sh", {
-    cluster_name = var.project_name
-  }))
-
+ user_data = templatefile("${path.module}/k3s-user-data.sh", {
+  cluster_name = var.project_name
+})
   tags = var.default_tags
 
   lifecycle {
