@@ -112,26 +112,35 @@ resource "aws_iam_instance_profile" "ec2_k3s" {
 
 resource "aws_instance" "k3s_server" {
   ami           = data.aws_ami.amazon_linux.id
-  instance_type = var.instance_type # m7i.flex.large
+  instance_type = var.instance_type
 
   subnet_id              = var.subnet_id
   vpc_security_group_ids = [aws_security_group.k3s.id]
-  iam_instance_profile   = aws_iam_instance_profile.ec2_k3s.name
+
+  iam_instance_profile = aws_iam_instance_profile.ec2_k3s.name
+
+  key_name = var.key_name
+
+  user_data = templatefile("${path.module}/k3s-user-data.sh", {
+    cluster_name = var.project_name
+  })
+
+  # Recreate instance if user_data changes
+  user_data_replace_on_change = true
 
   root_block_device {
     volume_size = 30
     volume_type = "gp3"
   }
 
-  key_name = var.key_name
-
- user_data = templatefile("${path.module}/k3s-user-data.sh", {
-  cluster_name = var.project_name
-})
-  tags = var.default_tags
+  tags = merge(
+    var.default_tags,
+    {
+      Name = "${var.project_name}-k3s-${var.environment}"
+    }
+  )
 
   lifecycle {
     create_before_destroy = true
   }
 }
-

@@ -1,82 +1,169 @@
 #!/bin/bash
-set -euo pipefail
+set -euxo pipefail
 
 LOG_FILE="/var/log/k3s-setup.log"
-exec > >(tee -a "$LOG_FILE") 2>&1
+
+# Log everything
+exec > >(tee -a "$LOG_FILE" | logger -t user-data -s 2>/dev/console) 2>&1
 
 on_error() {
   local exit_code=$?
-  echo "ERROR: user-data script failed with exit code $${exit_code} (line $BASH_LINENO)."
+  echo "ERROR: user-data script failed with exit code $${exit_code} at line ${BASH_LINENO[0]}"
 }
+
 trap on_error ERR
 
-echo "=== k3s-user-data starting at $(date -Is) ==="
+echo "================================================="
+echo "K3S INSTALLATION STARTED AT $(date -Is)"
+echo "================================================="
 
-# Install prerequisites
-yum update -y
-yum install -y docker containerd jq git curl
-systemctl enable --now docker
-systemctl enable --now containerd
+# Wait for network
+until ping -c1 amazon.com >/dev/null 2>&1; do
+  echo "Waiting for network..."
+  sleep 5
+done
+
+echo "Network is available."
+
+# Update system
+dnf update -y
+
+# Install required packages
+dnf install -y \
+  docker \
+  jq \
+  git \
+  curl \
+  tar
+
+# Enable Docker
+systemctl enable docker
+systemctl start docker
 
 # Disable swap
-swapoff -a
+swapoff -a || true
 sed -i '/ swap / s/^/#/' /etc/fstab || true
 
-# Install k3s server
+# Required kernel modules
+cat <<EOF | tee /etc/modules-load.d/k8s.conf
+overlay
+br_netfilter
+EOF
+
+modprobe overlay
+modprobe br_netfilter
+
+# Required sysctl params
+cat <<EOF | tee /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-iptables = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+net.ipv4.ip_forward = 1
+EOF
+
+sysctl --system
+
+echo "Installing K3s..."
+
+# Install K3s
 curl -sfL https://get.k3s.io | sh -s - server \
   --write-kubeconfig-mode 644 \
-  --enable traefik
+  --disable servicelb \
+  --disable local-storage \
+  --tls-san $(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
 
-# Wait for k3s
+# Wait for k3s service
+echo "Waiting for k3s service..."
+
+until systemctl is-active --quiet k3s; do
+  sleep 5
+done
+
+echo "k3s service is active."
+
+# Configure kubectl
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 
-echo "Waiting for Kubernetes API / nodes to be Ready..."
-until kubectl get nodes 2>/dev/null | grep -q "Ready"; do
+# Wait for Kubernetes node readiness
+echo "Waiting for Kubernetes node to become Ready..."
+
+until kubectl get nodes 2>/dev/null | grep -q " Ready "; do
+  kubectl get nodes || true
   sleep 10
 done
 
-echo "Kubernetes is up."
+echo "Kubernetes cluster is ready."
 
-# Make kubeconfig available for ec2-user
+# Configure kubeconfig for ec2-user
 mkdir -p /home/ec2-user/.kube
-cp -f /etc/rancher/k3s/k3s.yaml /home/ec2-user/.kube/config
-chown ec2-user:ec2-user /home/ec2-user/.kube/config
 
-# Helper: wait for a condition without failing the whole script too early
+cp /etc/rancher/k3s/k3s.yaml /home/ec2-user/.kube/config
+
+chown -R ec2-user:ec2-user /home/ec2-user/.kube
+
+chmod 600 /home/ec2-user/.kube/config
+
+# Helper function
 wait_for() {
-  # Usage: wait_for <kubectl args...>
   local timeout="$${WAIT_TIMEOUT:-600s}"
+
   echo "Waiting for: kubectl $* (timeout=$timeout)"
+
   timeout "$timeout" bash -c "until kubectl $*; do sleep 5; done"
 }
 
-# --- Best practice: install cert-manager before applying TLS-related resources ---
-# Install cert-manager + ClusterIssuer self-signed.
-# (These YAMLs are in the repo at /infra)
+echo "Cloning infrastructure repository..."
 
-# Clone repo once so we can apply infra manifests
 git clone https://github.com/cyber-pnl/k8sproject.git /tmp/k8sproject
 
-# cert-manager first
+# Wait for API server
+echo "Waiting for Kubernetes API..."
+
+until kubectl cluster-info >/dev/null 2>&1; do
+  sleep 5
+done
+
+echo "Installing cert-manager..."
+
 kubectl apply -f /tmp/k8sproject/infra/cert-manager.yaml
+
+echo "Waiting for cert-manager deployments..."
+
+kubectl wait \
+  --for=condition=available deployment \
+  --all \
+  -n cert-manager \
+  --timeout=300s || true
+
+echo "Installing ClusterIssuer..."
+
 kubectl apply -f /tmp/k8sproject/infra/cluster-issuer.yaml
 
-# Wait for cert-manager CRDs to exist (ClusterIssuer is cluster-scoped)
-# If CRDs are not ready yet, ArgoCD/TLS objects may fail.
 wait_for "get clusterissuers"
 
-# Install ArgoCD
+echo "Installing ArgoCD..."
+
 kubectl apply -f /tmp/k8sproject/infra/install-argocd.yaml
 
-# Wait for namespace and server deployment
-kubectl wait --for=condition=available deployment/argocd-server -n argocd --timeout=300s || true
+echo "Waiting for ArgoCD server deployment..."
 
-# Additionally wait until the argocd-server pod is running
+kubectl wait \
+  --for=condition=available deployment/argocd-server \
+  -n argocd \
+  --timeout=600s || true
+
+echo "Waiting for ArgoCD server pod..."
+
 wait_for "-n argocd get pods -l app.kubernetes.io/name=argocd-server --field-selector=status.phase=Running"
 
-# Apply the app
+echo "Deploying ArgoCD application..."
+
 kubectl apply -f /tmp/k8sproject/argocd-app.yaml
+
+echo "Cleaning temporary files..."
 
 rm -rf /tmp/k8sproject
 
-echo "=== K3s + cert-manager + ArgoCD installed successfully at $(date -Is) ==="
+echo "================================================="
+echo "K3S + CERT-MANAGER + ARGOCD INSTALLATION COMPLETED"
+echo "DATE: $(date -Is)"
+echo "================================================="
