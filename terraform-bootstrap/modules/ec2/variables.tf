@@ -6,6 +6,11 @@ variable "environment" {
   type = string
 }
 
+variable "aws_region" {
+  type    = string
+  default = "us-west-2"
+}
+
 variable "vpc_id" {
   type = string
 }
@@ -28,4 +33,3 @@ variable "default_tags" {
   type    = map(string)
   default = {}
 }
-
