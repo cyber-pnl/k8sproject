@@ -4,6 +4,7 @@
     {
       "Effect": "Allow",
       "Action": [
+        "ssm:PutParameter",
         "ssm:GetParameter",
         "ssm:GetParameters",
         "ssm:DescribeParameters",

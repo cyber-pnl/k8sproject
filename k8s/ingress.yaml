@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kubelearn-ingress
+spec:
+  ingressClassName: traefik
+  tls:
+  - hosts: [- kubelearn.duckdns.org]
+    secretName: kubelearn-app-tls
+  rules:
+  - host: kubelearn-pnl.duckdns.org
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ton-service
+            port: { number: 80 }

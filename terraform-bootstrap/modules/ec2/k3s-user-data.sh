@@ -1,18 +1,22 @@
 #!/bin/bash
-set -uo pipefail  # Pas de -e au début pour ne pas arrêter sur les checks
+set -uo pipefail
 
 exec > >(tee /var/log/k3s-setup.log | logger -t k3s-userdata -s 2>/dev/console) 2>&1
 
 echo "=== K3S INSTALL START $(date -Is) ==="
 
-# ====================== VARIABLES TERRAFORM ======================
+# ====================== VARIABLES TERRAFORM & CONFIG ======================
 REGION="${region}"
 PROJECT="${project_name}"
+EMAIL_LETSENCRYPT="danhojeanbrice28@gmail.com" # ⚠️ À remplacer par ton email pour les alertes Let's Encrypt
+      # ⚠️ Remplacer par ton sous-domaine (ex: "kubelearn-pnl" pour kubelearn-pnl.duckdns.org)
 
 if [[ -z "$REGION" || -z "$PROJECT" ]]; then
   echo "❌ ERREUR: REGION ou PROJECT non défini par Terraform"
   exit 1
 fi
+
+set -e
 
 # ====================== ATTENTE RÉSEAU ======================
 echo "Waiting for network..."
@@ -39,10 +43,34 @@ if [[ -z "$PUBLIC_IP" ]]; then
 fi
 
 echo "Public IP: $PUBLIC_IP"
-
-# ====================== MISE À JOUR SYSTÈME ======================
+# ====================== INSTALLATION ANTICIPÉE DES OUTILS AWS ======================
+echo "Installing AWS CLI for secure token retrieval..."
 dnf update -y
-dnf install -y curl jq aws-cli
+dnf install -y curl jq aws-cli iptables --allowerasing
+
+# ====================== MISE À JOUR DUCKDNS ======================
+echo "Retrieving DuckDNS token securely from AWS SSM..."
+# Le script récupère le token de manière dynamique et invisible
+
+# 🦆 CONFIGURATION DUCKDNS
+DUCKDNS_DOMAIN="kubelearn.duckdns.org"  
+DUCKDNS_TOKEN=$(aws ssm get-parameter --region "$REGION" --name "/$PROJECT/duckdns/token" --with-decryption --query "Parameter.Value" --output text)
+
+echo "Updating DuckDNS with the new public IP..."
+DUCK_RESPONSE=$(curl -s "https://www.duckdns.org/update?domains=${DUCKDNS_DOMAIN}&token=${DUCKDNS_TOKEN}&ip=${PUBLIC_IP}")
+
+if [[ "$DUCK_RESPONSE" == "OK" ]]; then
+  echo "✅ DuckDNS mis à jour avec succès : ${DUCKDNS_DOMAIN}.duckdns.org pointe désormais vers ${PUBLIC_IP}"
+else
+  echo "❌ ÉCHEC de la mise à jour DuckDNS. Réponse API : $DUCK_RESPONSE"
+  exit 1
+fi
+
+# ====================== MISE À ZONE & INSTALLATION DÉPENDANCES ======================
+echo "Installing system dependencies..."
+dnf update -y
+dnf install -y curl jq aws-cli iptables --allowerasing
+
 # ====================== CONFIG KERNEL ======================
 cat <<EOF > /etc/modules-load.d/k8s.conf
 overlay
@@ -60,13 +88,12 @@ EOF
 
 sysctl --system
 
-# ====================== INSTALLATION K3S ======================
-echo "Installing K3s..."
-
+# ====================== INSTALLATION K3S (AVEC TRAEFIK ACTIF) ======================
+echo "Installing K3s with Traefik..."
 curl -sfL https://get.k3s.io | sh -s - server \
   --write-kubeconfig-mode 644 \
-  --disable servicelb \
   --tls-san "$PUBLIC_IP" \
+  --tls-san "${DUCKDNS_DOMAIN}.duckdns.org" \
   --node-external-ip "$PUBLIC_IP" \
   --node-name "$(hostname)"
 
@@ -80,7 +107,7 @@ for i in {1..60}; do
     break
   fi
   echo "Tentative $i/60 - K3s pas encore prêt..."
-  sleep 8
+  sleep 5
 done
 
 # ====================== CONFIGURATION POUR EC2-USER ======================
@@ -91,18 +118,70 @@ chmod 600 /home/ec2-user/.kube/config
 
 # ====================== PUBLICATION DANS SSM ======================
 echo "Saving K3s info to SSM Parameter Store..."
-
 K3S_TOKEN=$(cat /var/lib/rancher/k3s/server/node-token)
 CA_CERT=$(kubectl config view --raw -o jsonpath='{.clusters[0].cluster.certificate-authority-data}')
 
-aws ssm put-parameter --region "$REGION" \
-  --name "/$PROJECT/k3s/token" \
-  --value "$K3S_TOKEN" \
-  --type SecureString --overwrite
+aws ssm put-parameter --region "$REGION" --name "/$PROJECT/k3s/token" --value "$K3S_TOKEN" --type SecureString --overwrite
+aws ssm put-parameter --region "$REGION" --name "/$PROJECT/k3s/ca-certificate" --value "$CA_CERT" --type SecureString --overwrite
 
-aws ssm put-parameter --region "$REGION" \
-  --name "/$PROJECT/k3s/ca-certificate" \
-  --value "$CA_CERT" \
-  --type SecureString --overwrite
+# ====================== DEPLOIEMENT D'ARGOCD ======================
+echo "=== Installing ArgoCD Core ==="
+kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
-echo "=== K3S INSTALLATION FINISHED SUCCESSFULLY $(date -Is) ==="
+echo "Waiting for ArgoCD CRDs..."
+kubectl wait --for=condition=established crd/applications.argoproj.io --timeout=120s
+
+# ====================== DEPLOIEMENT DE CERT-MANAGER ======================
+echo "=== Installing cert-manager ==="
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.4/cert-manager.yaml
+
+echo "Waiting for cert-manager to be ready..."
+kubectl wait --for=condition=Available deployment/cert-manager-webhook -n cert-manager --timeout=120s
+
+# ====================== CONFIGURATION DU CLUSTERISSUER (LET'S ENCRYPT) ======================
+echo "=== Creating Let's Encrypt ClusterIssuer ==="
+cat <<EOF | kubectl apply -f -
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: ${EMAIL_LETSENCRYPT}
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    solvers:
+    - http01:
+        ingress:
+          ingressClassName: traefik
+EOF
+
+# ====================== DEPLOIEMENT DE TON APPLICATION INITIALE ======================
+echo "=== Deploying initial ArgoCD Application ==="
+cat <<EOF | kubectl apply -f -
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kubelearn-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/cyber-pnl/k8sproject.git
+    targetRevision: HEAD
+    path: 'k8s' 
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+EOF
+
+echo "✅ Initial ArgoCD Application deployed"
+echo "=== K3S, ARGOCD & CERT-MANAGER INSTALLATION FINISHED SUCCESSFULLY $(date -Is) ==="
