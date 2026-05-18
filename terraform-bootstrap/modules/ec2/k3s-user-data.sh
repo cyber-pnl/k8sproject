@@ -54,13 +54,13 @@ echo "Retrieving DuckDNS token securely from AWS SSM..."
 
 # 🦆 CONFIGURATION DUCKDNS
 DUCKDNS_DOMAIN="kubelearn.duckdns.org"  
-DUCKDNS_TOKEN=$(aws ssm get-parameter --region "$REGION" --name "/$PROJECT/duckdns/token" --with-decryption --query "Parameter.Value" --output text)
+DUCKDNS_TOKEN=$(aws ssm get-parameter --region "$REGION" --name "/kubelearn/duckdns/token" --with-decryption --query "Parameter.Value" --output text)
 
 echo "Updating DuckDNS with the new public IP..."
-DUCK_RESPONSE=$(curl -s "https://www.duckdns.org/update?domains=${DUCKDNS_DOMAIN}&token=${DUCKDNS_TOKEN}&ip=${PUBLIC_IP}")
+DUCK_RESPONSE=$(curl -s "https://www.duckdns.org/update?domains=$DUCKDNS_DOMAIN&token=$DUCKDNS_TOKEN&ip=$PUBLIC_IP")
 
 if [[ "$DUCK_RESPONSE" == "OK" ]]; then
-  echo "✅ DuckDNS mis à jour avec succès : ${DUCKDNS_DOMAIN}.duckdns.org pointe désormais vers ${PUBLIC_IP}"
+  echo "✅ DuckDNS mis à jour avec succès : $DUCKDNS_DOMAIN.duckdns.org pointe désormais vers $PUBLIC_IP"
 else
   echo "❌ ÉCHEC de la mise à jour DuckDNS. Réponse API : $DUCK_RESPONSE"
   exit 1
@@ -93,7 +93,7 @@ echo "Installing K3s with Traefik..."
 curl -sfL https://get.k3s.io | sh -s - server \
   --write-kubeconfig-mode 644 \
   --tls-san "$PUBLIC_IP" \
-  --tls-san "${DUCKDNS_DOMAIN}.duckdns.org" \
+  --tls-san "$DUCKDNS_DOMAIN.duckdns.org" \
   --node-external-ip "$PUBLIC_IP" \
   --node-name "$(hostname)"
 
@@ -103,7 +103,7 @@ export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 echo "Waiting for K3s to be ready..."
 for i in {1..60}; do
   if kubectl get nodes 2>/dev/null | grep -q " Ready "; then
-    echo "✅ K3s node is Ready"
+    echo " K3s node is Ready"
     break
   fi
   echo "Tentative $i/60 - K3s pas encore prêt..."
@@ -127,7 +127,7 @@ aws ssm put-parameter --region "$REGION" --name "/$PROJECT/k3s/ca-certificate" -
 # ====================== DEPLOIEMENT D'ARGOCD ======================
 echo "=== Installing ArgoCD Core ==="
 kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl apply --server-side -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
 echo "Waiting for ArgoCD CRDs..."
 kubectl wait --for=condition=established crd/applications.argoproj.io --timeout=120s
@@ -139,6 +139,10 @@ kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/
 echo "Waiting for cert-manager to be ready..."
 kubectl wait --for=condition=Available deployment/cert-manager-webhook -n cert-manager --timeout=120s
 
+# ====================== DEPLOIEMENT DE BITNAMI SEALED SECRETS ======================
+echo "=== Installing Bitnami Sealed Secrets ==="
+kubectl apply -f https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.27.1/controller.yaml
+
 # ====================== CONFIGURATION DU CLUSTERISSUER (LET'S ENCRYPT) ======================
 echo "=== Creating Let's Encrypt ClusterIssuer ==="
 cat <<EOF | kubectl apply -f -
@@ -149,7 +153,7 @@ metadata:
 spec:
   acme:
     server: https://acme-v02.api.letsencrypt.org/directory
-    email: ${EMAIL_LETSENCRYPT}
+    email: $EMAIL_LETSENCRYPT
     privateKeySecretRef:
       name: letsencrypt-prod
     solvers:
