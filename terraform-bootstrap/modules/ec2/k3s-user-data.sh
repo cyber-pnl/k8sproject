@@ -47,6 +47,8 @@ echo "Public IP: $PUBLIC_IP"
 echo "Installing AWS CLI for secure token retrieval..."
 dnf update -y
 dnf install -y curl jq aws-cli iptables --allowerasing
+dnf install -y python3 python3-pip
+pip3 install bcrypt
 
 # ====================== MISE À JOUR DUCKDNS ======================
 echo "Retrieving DuckDNS token securely from AWS SSM..."
@@ -140,9 +142,24 @@ echo "Waiting for cert-manager to be ready..."
 kubectl wait --for=condition=Available deployment/cert-manager-webhook -n cert-manager --timeout=120s
 
 # ====================== DEPLOIEMENT DE BITNAMI SEALED SECRETS ======================
-echo "=== Installing Bitnami Sealed Secrets ==="
+KUBESEAL_VERSION=$(curl -s https://api.github.com/repos/bitnami-labs/sealed-secrets/releases/latest | grep '"tag_name"' | sed -E 's/.*"v([^"]+)".*/\1/')
+
+echo "🔍 Version détectée : $KUBESEAL_VERSION"
+
 kubectl apply -f https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.27.1/controller.yaml
 
+# Télécharger le binaire
+curl -sSL "https://github.com/bitnami-labs/sealed-secrets/releases/download/v$KUBESEAL_VERSION/kubeseal-$KUBESEAL_VERSION-linux-amd64.tar.gz" \
+  -o kubeseal.tar.gz
+
+# Extraire et installer
+tar -xvzf kubeseal.tar.gz kubeseal
+install -m 755 kubeseal /usr/local/bin/kubeseal
+# Nettoyage
+rm -f kubeseal.tar.gz kubeseal
+
+# Vérification
+echo "✅ kubeseal version : $(kubeseal --version)"
 # ====================== CONFIGURATION DU CLUSTERISSUER (LET'S ENCRYPT) ======================
 echo "=== Creating Let's Encrypt ClusterIssuer ==="
 cat <<EOF | kubectl apply -f -
