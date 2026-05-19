@@ -10,24 +10,24 @@ locals {
 
 # ── 0. GÉNÉRATION DE LA CLÉ SSH AUTOMATIQUE ─────────────────
 # Génère une clé privée RSA de 4096 bits en mémoire
-resource "tls_private_key" "ec2_key" {
-  algorithm = "RSA"
-  rsa_bits  = 4096
-}
+#resource "tls_private_key" "ec2_key" {
+# algorithm = "RSA"
+# rsa_bits  = 4096
+#}
 
 # Crée la Key Pair sur AWS avec la clé publique générée
-resource "aws_key_pair" "k3s_key_pair" {
-  key_name   = "${local.project_name}-${local.environment}-ssh-key"
-  public_key = tls_private_key.ec2_key.public_key_openssh
-  tags       = local.default_tags
-}
+#resource "aws_key_pair" "k3s_key_pair" {
+#  key_name   = "${local.project_name}-${local.environment}-ssh-key"
+#  public_key = tls_private_key.ec2_key.public_key_openssh
+ # tags       = local.default_tags
+#}
 
 # Sauvegarde la clé privée dans un fichier local pour tes connexions futures
-resource "local_file" "ssh_key_file" {
-  content         = tls_private_key.ec2_key.private_key_pem
-  filename        = "${path.module}/${local.project_name}-key.pem"
-  file_permission = "0400" # Configure automatiquement les droits en lecture seule
-}
+#resource "local_file" "ssh_key_file" {
+#  content         = tls_private_key.ec2_key.private_key_pem
+#  filename        = "${path.module}/${local.project_name}-key.pem"
+#  file_permission = "0400" # Configure automatiquement les droits en lecture seule
+#}
 
 # ── 1. RÉSEAU ──────────────────────────────────────────────
 module "networking" {
