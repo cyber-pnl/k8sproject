@@ -15,7 +15,7 @@ module.exports = {
   moduleFileExtensions: ['js'],
   setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
   moduleNameMapper: {
-    '^redis$': '<rootDir>/__mocks__/redis.js'
+    '^redis$': '<rootDir>/services/user-service/__mocks__/redis.js',
   }
 };
 
