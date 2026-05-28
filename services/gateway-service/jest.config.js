@@ -1,7 +1,8 @@
+// jest.config.js
 module.exports = {
   testEnvironment: 'node',
   moduleNameMapper: {
-    '^redis$': '<rootDir>/services/gateway-service/__mocks__/redis.js',
-    '^connect-redis$': '<rootDir>/services/gateway-service/__mocks__/connect-redis.js'
+    '^redis$': '<rootDir>/__mocks__/redis.js',
+    '^connect-redis$': '<rootDir>/__mocks__/connect-redis.js'
   }
 };
