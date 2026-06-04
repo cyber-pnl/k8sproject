@@ -3,7 +3,7 @@ const express = require('express');
 const userRoutes = require('../../src/modules/users/routes');
 const usersService = require('../../src/modules/users/service');
 const authMiddleware = require('../../src/shared/middlewares/auth.middleware');
-
+const redis = require("redis");
 // Mock service and middleware
 jest.mock('../../src/modules/users/service');
 jest.mock('../../src/shared/middlewares/auth.middleware');
