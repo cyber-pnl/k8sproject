@@ -36,16 +36,6 @@ build/
 out/
 .next/
 
-# Tests / Coverage / Mocks
-**/coverage/
-**/coverage-*/
-**/__mocks__/
-**/*.jest-snapshot
-jest-report*.xml
-.nyc_output/
-**/*.lcov
-**/test-results/
-**/jest-results/
 
 # Node modules config (keep package-lock)
 # package-lock.json is committed for reproducible installs

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="{title}" tests="11" failures="0" errors="0" time="0.794">
+  <testsuite name="Auth Controller" errors="0" failures="0" skipped="0" timestamp="2026-04-18T19:24:16" time="0.395" tests="5">
+    <testcase classname="Auth Controller findUserByUsername-should return user when found" name="should return user when found" time="0.004">
+    </testcase>
+    <testcase classname="Auth Controller findUserByUsername-should return null when user not found" name="should return null when user not found" time="0">
+    </testcase>
+    <testcase classname="Auth Controller createUser-should create user with hashed password" name="should create user with hashed password" time="0.002">
+    </testcase>
+    <testcase classname="Auth Controller verifyPassword-should verify correct password" name="should verify correct password" time="0">
+    </testcase>
+    <testcase classname="Auth Controller verifyPassword-should reject incorrect password" name="should reject incorrect password" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="Auth Routes" errors="0" failures="0" skipped="0" timestamp="2026-04-18T19:24:16" time="0.615" tests="6">
+    <testcase classname="Auth Routes POST /auth/verify-should verify valid credentials" name="should verify valid credentials" time="0.028">
+    </testcase>
+    <testcase classname="Auth Routes POST /auth/verify-should return 401 for invalid password" name="should return 401 for invalid password" time="0.004">
+    </testcase>
+    <testcase classname="Auth Routes POST /auth/verify-should return 400 for missing credentials" name="should return 400 for missing credentials" time="0.003">
+    </testcase>
+    <testcase classname="Auth Routes POST /auth/register-should register new user" name="should register new user" time="0.003">
+    </testcase>
+    <testcase classname="Auth Routes POST /auth/register-should reject existing user" name="should reject existing user" time="0.004">
+    </testcase>
+    <testcase classname="Auth Routes POST /auth/register-should reject short password" name="should reject short password" time="0.002">
+    </testcase>
+  </testsuite>
+</testsuites>
