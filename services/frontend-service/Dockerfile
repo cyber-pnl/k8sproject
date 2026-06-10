@@ -7,7 +7,7 @@ COPY package.json package-lock.json ./
 
 # npm ci (Clean Install) force l'utilisation stricte du package-lock.json,
 # ignore le node_modules local et est beaucoup plus rapide.
-RUN npm install --omit=dev && npm install ejs
+RUN npm install --omit=dev 
 
 # ── STAGE 2 : EXÉCUTION DE L'APPLICATION ──
 FROM node:18-alpine
