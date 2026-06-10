@@ -89,6 +89,8 @@ function commonSetup(redisStore) {
       await req.session.save();
       console.log("✅ Session saved after login:", req.session.user);
 
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       if (userData.user.role === "admin") {
         return res.redirect("/dashboard");
       }
@@ -132,6 +134,8 @@ function commonSetup(redisStore) {
 
       await req.session.save();
       console.log("✅ Session saved after signup:", req.session.user);
+
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       res.redirect("/");
     } catch (err) {
