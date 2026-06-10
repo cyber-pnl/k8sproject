@@ -213,7 +213,7 @@ async function initProd() {
   redisClient.on("error", (err) => console.error("Redis Client Error:", err));
   await redisClient.connect();
   console.log("Redis connected");
-   pp.set("trust proxy", 1);
+  app.set("trust proxy", 1);
   const redisStore = new RedisStore({ client: redisClient });
   commonSetup(redisStore);
 
