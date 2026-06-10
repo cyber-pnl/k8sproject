@@ -11,6 +11,8 @@ const { createProxyMiddleware } = require("http-proxy-middleware");
 const path = require("path");
 
 const app = express();
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // ========================
 // SHARED SETUP FUNCTION - USED BY TEST AND PROD
@@ -76,7 +78,7 @@ function commonSetup(redisStore) {
       if (userData.user.role === "admin") {
         return res.redirect("/dashboard");
       }
-      res.redirect("/");
+      return res.redirect("/");
     } catch (err) {
       console.error("Login error:", err);
       res.redirect("/login?error=1");
@@ -181,8 +183,7 @@ const FRONTEND_URL = process.env.FRONTEND_URL || "http://frontend-service:3003";
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.use(express.static(path.join(__dirname, "public")));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
 
 // ========================
   // START SERVER FOR TESTS (sync, no listen)
