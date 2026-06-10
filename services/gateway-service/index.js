@@ -11,8 +11,22 @@ const { createProxyMiddleware } = require("http-proxy-middleware");
 const path = require("path");
 
 const app = express();
+
+// ========================
+// SERVICE URLs
+// ========================
+const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || "http://auth-service:3001";
+const USER_SERVICE_URL = process.env.USER_SERVICE_URL || "http://user-service:3002";
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://frontend-service:3003";
+
+// ========================
+// EXPRESS CONFIGURATION — EN PREMIER
+// ========================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "views"));
+app.use(express.static(path.join(__dirname, "public")));
 
 // ========================
 // SHARED SETUP FUNCTION - USED BY TEST AND PROD
@@ -42,7 +56,7 @@ function commonSetup(redisStore) {
 
   // POST /login
   app.post("/login", async (req, res) => {
-    console.log("req.body:", req.body); // 
+    console.log("req.body:", req.body);
     const { username, password } = req.body;
 
     if (!username || !password) {
@@ -73,7 +87,7 @@ function commonSetup(redisStore) {
       };
 
       await req.session.save();
-      console.log(" Session saved after login:", req.session.user);
+      console.log("✅ Session saved after login:", req.session.user);
 
       if (userData.user.role === "admin") {
         return res.redirect("/dashboard");
@@ -87,6 +101,7 @@ function commonSetup(redisStore) {
 
   // POST /signup
   app.post("/signup", async (req, res) => {
+    console.log("req.body:", req.body);
     const { username, password, confirmPassword } = req.body;
 
     if (!username || !password) return res.redirect("/signup?error=1");
@@ -116,7 +131,7 @@ function commonSetup(redisStore) {
       };
 
       await req.session.save();
-      console.log(" Session saved after signup:", req.session.user);
+      console.log("✅ Session saved after signup:", req.session.user);
 
       res.redirect("/");
     } catch (err) {
@@ -144,6 +159,7 @@ function commonSetup(redisStore) {
         if (req.session && req.session.user) {
           proxyReq.setHeader("x-user-id", req.session.user.id);
           proxyReq.setHeader("x-user-role", req.session.user.role || "user");
+          proxyReq.setHeader("x-user-name", req.session.user.username);
         }
       },
     })
@@ -156,13 +172,14 @@ function commonSetup(redisStore) {
       target: FRONTEND_URL,
       changeOrigin: true,
       onProxyReq: (proxyReq, req) => {
+        console.log("🔍 [PROXY /] URL:", req.url, "| Session user:", req.session?.user?.username || "aucun");
         if (req.session && req.session.user) {
           proxyReq.setHeader("x-user-id", req.session.user.id);
           proxyReq.setHeader("x-user-role", req.session.user.role || "user");
           proxyReq.setHeader("x-user-name", req.session.user.username);
-          console.log(" Passing user headers to frontend:", req.session.user.username);
+          console.log("✅ Headers envoyés à frontend:", req.session.user.username);
         } else {
-          console.log(" No session user for request:", req.url);
+          console.log("❌ Pas de session pour:", req.url);
         }
       },
     })
@@ -170,37 +187,21 @@ function commonSetup(redisStore) {
 }
 
 // ========================
-// SERVICE URLs
+// START SERVER FOR TESTS (sync, no listen)
 // ========================
+async function startServer() {
+  const redisStore = new RedisStore({ client: null });
+  commonSetup(redisStore);
+  console.log("Test mode: server initialized without listening");
+}
 
-const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || "http://auth-service:3001";
-const USER_SERVICE_URL = process.env.USER_SERVICE_URL || "http://user-service:3002";
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://frontend-service:3003";
-
-// ========================
-// EXPRESS CONFIGURATION
-// ========================
-app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "views"));
-app.use(express.static(path.join(__dirname, "public")));
-
+if (process.env.NODE_ENV === "test") {
+  startServer();
+}
 
 // ========================
-  // START SERVER FOR TESTS (sync, no listen)
-  // ========================
-  async function startServer() {
-    const redisStore = new RedisStore({ client: null });
-    commonSetup(redisStore);
-    console.log('Test mode: server initialized without listening');
-  }
-
-  // Test env
-  if (process.env.NODE_ENV === 'test') {
-    startServer();
-  }
-
-
-// For prod async Redis + setup
+// PROD — Redis + setup
+// ========================
 async function initProd() {
   const redisClient = createClient({
     url: process.env.REDIS_URL || "redis://redis-service:6379",
@@ -221,12 +222,11 @@ async function initProd() {
   });
 }
 
-
 if (require.main === module) {
-  if (process.env.NODE_ENV === 'test') {
-    console.log('Test mode: sync setup complete');
+  if (process.env.NODE_ENV === "test") {
+    console.log("Test mode: sync setup complete");
   } else {
-    initProd().catch(err => {
+    initProd().catch((err) => {
       console.error("Startup failed:", err);
       process.exit(1);
     });
@@ -234,5 +234,3 @@ if (require.main === module) {
 }
 
 module.exports = { app, startServer };
-
-
