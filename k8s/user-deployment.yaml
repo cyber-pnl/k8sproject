@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: user-service
-          image: ghcr.io/cyber-pnl/k8sproject/user-service:92472e17b2e3775375f1f92032c776c607f3a021
+          image: ghcr.io/cyber-pnl/k8sproject/user-service:436e93a45c1d2a2aacf3027a81427648f95eb318
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3002
