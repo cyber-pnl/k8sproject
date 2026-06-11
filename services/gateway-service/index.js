@@ -11,6 +11,7 @@ const { createProxyMiddleware } = require("http-proxy-middleware");
 const path = require("path");
 
 const app = express();
+app.set("trust proxy", 1);
 
 // ========================
 // SERVICE URLs
@@ -213,7 +214,6 @@ async function initProd() {
   redisClient.on("error", (err) => console.error("Redis Client Error:", err));
   await redisClient.connect();
   console.log("Redis connected");
-  app.set("trust proxy", 1);
   const redisStore = new RedisStore({ client: redisClient });
   commonSetup(redisStore);
 
