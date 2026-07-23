@@ -14,17 +14,30 @@ app.use(express.urlencoded({ extended: true }));
 
 // Lit les headers injectés par le gateway
 app.use((req, res, next) => {
-  if (req.headers["x-user-id"] && req.headers["x-user-name"]) {
+  const userId = req.headers["x-user-id"];
+  const userName = req.headers["x-user-name"];
+
+  console.log("🔍 [Frontend] Headers reçus:", {
+    "x-user-id": userId,
+    "x-user-name": userName,
+    "x-user-role": req.headers["x-user-role"],
+    "content-type": req.headers["content-type"],
+    url: req.url,
+  });
+
+  if (userId && userName) {
     const user = {
-      id: req.headers["x-user-id"],
-      username: req.headers["x-user-name"],
+      id: userId,
+      username: userName,
       role: req.headers["x-user-role"] || "user",
     };
     res.locals.user = user;
     res.locals.currentUser = user;
+    console.log("✅ [Frontend] Utilisateur défini:", userName);
   } else {
     res.locals.user = null;
     res.locals.currentUser = null;
+    console.log("❌ [Frontend] Aucun header utilisateur reçu pour:", req.url);
   }
   next();
 });

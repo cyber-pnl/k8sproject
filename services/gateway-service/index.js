@@ -40,8 +40,9 @@ function commonSetup(redisStore) {
       resave: false,
       saveUninitialized: false,
       store: redisStore,
+      proxy: true,
       cookie: {
-        secure: true,
+        secure: process.env.COOKIE_SECURE !== "false",
         httpOnly: true,
         maxAge: 1000 * 60 * 60 * 24,
         sameSite: "lax",
@@ -89,8 +90,8 @@ function commonSetup(redisStore) {
 
       await req.session.save();
       console.log("✅ Session saved after login:", req.session.user);
-
-      await new Promise(resolve => setTimeout(resolve, 100));
+      console.log("🔄 Session ID:", req.session.id);
+      console.log("🔄 Cookie:", req.session.cookie);
 
       if (userData.user.role === "admin") {
         return res.redirect("/dashboard");
@@ -135,8 +136,8 @@ function commonSetup(redisStore) {
 
       await req.session.save();
       console.log("✅ Session saved after signup:", req.session.user);
-
-      await new Promise(resolve => setTimeout(resolve, 100));
+      console.log("🔄 Session ID:", req.session.id);
+      console.log("🔄 Cookie:", req.session.cookie);
 
       res.redirect("/");
     } catch (err) {
