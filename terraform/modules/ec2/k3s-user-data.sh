@@ -138,28 +138,35 @@ kubectl wait --for=condition=established crd/applications.argoproj.io --timeout=
 echo "=== Installing cert-manager ==="
 kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.4/cert-manager.yaml
 
-echo "Waiting for cert-manager to be ready..."
-kubectl wait --for=condition=Available deployment/cert-manager-webhook -n cert-manager --timeout=120s
+echo "Waiting for cert-manager deployments to be ready..."
+# On attend que TOUS les composants de cert-manager soient prêts
+kubectl rollout status deployment/cert-manager -n cert-manager --timeout=120s
+kubectl rollout status deployment/cert-manager-cainjector -n cert-manager --timeout=120s
+kubectl rollout status deployment/cert-manager-webhook -n cert-manager --timeout=120s
+
+# Pause de sécurité indispensable : laisse le temps au webhook d'échanger ses clés TLS internes
+sleep 15
 
 # ====================== DEPLOIEMENT DE BITNAMI SEALED SECRETS ======================
-KUBESEAL_VERSION=$(curl -s https://api.github.com/repos/bitnami-labs/sealed-secrets/releases/latest | grep '"tag_name"' | sed -E 's/.*"v([^"]+)".*/\1/')
+KUBESEAL_VERSION="0.27.3"
 
-echo "🔍 Version détectée : $KUBESEAL_VERSION"
+echo "🔍 Version installée : $KUBESEAL_VERSION"
 
-kubectl apply -f https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.27.1/controller.yaml
+# Correction de la version ici (v0.27.3 au lieu de v0.27.1)
+kubectl apply -f "https://github.com/bitnami-labs/sealed-secrets/releases/download/v$KUBESEAL_VERSION/controller.yaml"
 
-# Télécharger le binaire
+# Télécharger le binaire CLI
 curl -sSL "https://github.com/bitnami-labs/sealed-secrets/releases/download/v$KUBESEAL_VERSION/kubeseal-$KUBESEAL_VERSION-linux-amd64.tar.gz" \
   -o kubeseal.tar.gz
 
 # Extraire et installer
 tar -xvzf kubeseal.tar.gz kubeseal
 install -m 755 kubeseal /usr/local/bin/kubeseal
-# Nettoyage
 rm -f kubeseal.tar.gz kubeseal
 
 # Vérification
 echo "✅ kubeseal version : $(kubeseal --version)"
+
 # ====================== CONFIGURATION DU CLUSTERISSUER (LET'S ENCRYPT) ======================
 echo "=== Creating Let's Encrypt ClusterIssuer ==="
 cat <<EOF | kubectl apply -f -

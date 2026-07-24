@@ -21,22 +21,13 @@ const USER_SERVICE_URL = process.env.USER_SERVICE_URL || "http://user-service:30
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://frontend-service:3003";
 
 // ========================
-// EXPRESS CONFIGURATION — EN PREMIER
-// ========================
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "views"));
-app.use(express.static(path.join(__dirname, "public")));
-
-// ========================
 // SHARED SETUP FUNCTION - USED BY TEST AND PROD
 // ========================
 function commonSetup(redisStore) {
   // SESSION
   app.use(
     session({
-      secret: process.env.SESSION_SECRET,
+      secret: process.env.SESSION_SECRET || "supersecretkey",
       resave: false,
       saveUninitialized: false,
       store: redisStore,
@@ -50,14 +41,20 @@ function commonSetup(redisStore) {
     })
   );
 
-  // MIDDLEWARE
+  // MIDDLEWARE USER LOCAL
   app.use((req, res, next) => {
     res.locals.user = req.session.user || null;
     next();
   });
 
+  // ========================
+  // ROUTES LOCALES DE LA GATEWAY (Besoins des parsers JSON/URLencoded)
+  // ========================
+  const jsonParser = express.json();
+  const urlEncodedParser = express.urlencoded({ extended: true });
+
   // POST /login
-  app.post("/login", async (req, res) => {
+  app.post("/login", jsonParser, urlEncodedParser, async (req, res) => {
     console.log("req.body:", req.body);
     const { username, password } = req.body;
 
@@ -90,8 +87,6 @@ function commonSetup(redisStore) {
 
       await req.session.save();
       console.log("✅ Session saved after login:", req.session.user);
-      console.log("🔄 Session ID:", req.session.id);
-      console.log("🔄 Cookie:", req.session.cookie);
 
       if (userData.user.role === "admin") {
         return res.redirect("/dashboard");
@@ -104,7 +99,7 @@ function commonSetup(redisStore) {
   });
 
   // POST /signup
-  app.post("/signup", async (req, res) => {
+  app.post("/signup", jsonParser, urlEncodedParser, async (req, res) => {
     console.log("req.body:", req.body);
     const { username, password, confirmPassword } = req.body;
 
@@ -136,8 +131,6 @@ function commonSetup(redisStore) {
 
       await req.session.save();
       console.log("✅ Session saved after signup:", req.session.user);
-      console.log("🔄 Session ID:", req.session.id);
-      console.log("🔄 Cookie:", req.session.cookie);
 
       res.redirect("/");
     } catch (err) {
@@ -154,6 +147,10 @@ function commonSetup(redisStore) {
     });
   });
 
+  // ========================
+  // PROXIES (AVANT LE STATIC / VIEW PARSERS)
+  // ========================
+
   // API Routes — AVANT le proxy "/"
   app.use(
     "/api",
@@ -163,9 +160,10 @@ function commonSetup(redisStore) {
       pathRewrite: { "^/api": "" },
       onProxyReq: (proxyReq, req) => {
         if (req.session && req.session.user) {
-          proxyReq.setHeader("x-user-id", req.session.user.id);
-          proxyReq.setHeader("x-user-role", req.session.user.role || "user");
-          proxyReq.setHeader("x-user-name", req.session.user.username);
+          // Conversion stricte en String pour éviter les crashs de setHeader
+          proxyReq.setHeader("x-user-id", String(req.session.user.id));
+          proxyReq.setHeader("x-user-role", String(req.session.user.role || "user"));
+          proxyReq.setHeader("x-user-name", String(req.session.user.username));
         }
       },
     })
@@ -180,10 +178,11 @@ function commonSetup(redisStore) {
       onProxyReq: (proxyReq, req) => {
         console.log("🔍 [PROXY /] URL:", req.url, "| Session user:", req.session?.user?.username || "aucun");
         if (req.session && req.session.user) {
-          proxyReq.setHeader("x-user-id", req.session.user.id);
-          proxyReq.setHeader("x-user-role", req.session.user.role || "user");
-          proxyReq.setHeader("x-user-name", req.session.user.username);
-          console.log("✅ Headers envoyés à frontend:", req.session.user.username);
+          // Conversion stricte en String
+          proxyReq.setHeader("x-user-id", String(req.session.user.id));
+          proxyReq.setHeader("x-user-role", String(req.session.user.role || "user"));
+          proxyReq.setHeader("x-user-name", String(req.session.user.username));
+          console.log("✅ Headers envoyés à frontend pour", req.session.user.username);
         } else {
           console.log("❌ Pas de session pour:", req.url);
         }
@@ -193,7 +192,7 @@ function commonSetup(redisStore) {
 }
 
 // ========================
-// START SERVER FOR TESTS (sync, no listen)
+// START SERVER FOR TESTS
 // ========================
 async function startServer() {
   const redisStore = new RedisStore({ client: null });
