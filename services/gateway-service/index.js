@@ -88,10 +88,7 @@ function commonSetup(redisStore) {
       await req.session.save();
       console.log("✅ Session saved after login:", req.session.user);
 
-      if (userData.user.role === "admin") {
-        return res.redirect("/dashboard");
-      }
-      return res.redirect("/");
+      return res.redirect("/dashboard");
     } catch (err) {
       console.error("Login error:", err);
       res.redirect("/login?error=1");
@@ -132,7 +129,7 @@ function commonSetup(redisStore) {
       await req.session.save();
       console.log("✅ Session saved after signup:", req.session.user);
 
-      res.redirect("/");
+      res.redirect("/dashboard");
     } catch (err) {
       console.error("Signup error:", err);
       res.redirect("/signup?error=1");

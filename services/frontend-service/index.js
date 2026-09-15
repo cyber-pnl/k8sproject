@@ -82,7 +82,7 @@ app.get("/signup", (req, res) => {
   });
 });
 
-app.get("/logout", (req, res) => res.redirect("/logout"));
+app.get("/logout", (req, res) => res.redirect("/"));
 
 app.use((req, res) => res.status(404).send("Page not found"));
 app.use((err, req, res, next) => {

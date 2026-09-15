@@ -65,6 +65,22 @@ describe('Gateway Service Tests', () => {
       expect(res.headers.location).toBe('/dashboard');
     });
 
+    test('should redirect regular user to dashboard after login', async () => {
+      global.fetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({ success: true, user: { id: 2, username: 'user', role: 'user' } }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      );
+
+      const res = await request(app)
+        .post('/login')
+        .send({ username: 'user', password: 'pass' })
+        .expect(302);
+
+      expect(res.headers.location).toBe('/dashboard');
+    });
+
 
     test('should redirect on auth failure', async () => {
       global.fetch.mockResolvedValueOnce(
@@ -107,7 +123,7 @@ describe('Gateway Service Tests', () => {
         .send({ username: 'newuser', password: 'password123', confirmPassword: 'password123' })
         .expect(302);
 
-      expect(res.headers.location).toBe('/');
+      expect(res.headers.location).toBe('/dashboard');
     });
 
 
