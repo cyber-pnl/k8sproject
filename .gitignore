@@ -50,6 +50,7 @@ out/
 *.tfstate
 *.tfstate.*
 terraform.tfstate.d/
+**/tfplan
 .crash.log
 crash.log
 *.tfplan
