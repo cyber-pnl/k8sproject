@@ -155,13 +155,15 @@ function commonSetup(redisStore) {
       target: USER_SERVICE_URL,
       changeOrigin: true,
       pathRewrite: { "^/api": "" },
-      onProxyReq: (proxyReq, req) => {
-        if (req.session && req.session.user) {
-          // Conversion stricte en String pour éviter les crashs de setHeader
-          proxyReq.setHeader("x-user-id", String(req.session.user.id));
-          proxyReq.setHeader("x-user-role", String(req.session.user.role || "user"));
-          proxyReq.setHeader("x-user-name", String(req.session.user.username));
-        }
+      on: {
+        proxyReq: (proxyReq, req) => {
+          if (req.session && req.session.user) {
+            // Conversion stricte en String pour éviter les crashs de setHeader
+            proxyReq.setHeader("x-user-id", String(req.session.user.id));
+            proxyReq.setHeader("x-user-role", String(req.session.user.role || "user"));
+            proxyReq.setHeader("x-user-name", String(req.session.user.username));
+          }
+        },
       },
     })
   );
@@ -172,17 +174,19 @@ function commonSetup(redisStore) {
     createProxyMiddleware({
       target: FRONTEND_URL,
       changeOrigin: true,
-      onProxyReq: (proxyReq, req) => {
-        console.log("🔍 [PROXY /] URL:", req.url, "| Session user:", req.session?.user?.username || "aucun");
-        if (req.session && req.session.user) {
-          // Conversion stricte en String
-          proxyReq.setHeader("x-user-id", String(req.session.user.id));
-          proxyReq.setHeader("x-user-role", String(req.session.user.role || "user"));
-          proxyReq.setHeader("x-user-name", String(req.session.user.username));
-          console.log("✅ Headers envoyés à frontend pour", req.session.user.username);
-        } else {
-          console.log("❌ Pas de session pour:", req.url);
-        }
+      on: {
+        proxyReq: (proxyReq, req) => {
+          console.log("🔍 [PROXY /] URL:", req.url, "| Session user:", req.session?.user?.username || "aucun");
+          if (req.session && req.session.user) {
+            // Conversion stricte en String
+            proxyReq.setHeader("x-user-id", String(req.session.user.id));
+            proxyReq.setHeader("x-user-role", String(req.session.user.role || "user"));
+            proxyReq.setHeader("x-user-name", String(req.session.user.username));
+            console.log("✅ Headers envoyés à frontend pour", req.session.user.username);
+          } else {
+            console.log("❌ Pas de session pour:", req.url);
+          }
+        },
       },
     })
   );

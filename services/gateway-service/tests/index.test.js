@@ -2,7 +2,28 @@ const request = require('supertest');
 const nock = require('nock');
 
 jest.mock('redis');
-jest.mock('connect-redis');
+
+let mockStore;
+jest.mock('connect-redis', () => {
+  const sessionMod = require('express-session');
+  class MockRedisStore extends sessionMod.Store {
+    constructor() {
+      super();
+      this.on = jest.fn();
+      this.destroy = jest.fn((sid, cb) => cb());
+      this.get = jest.fn((id, cb) => cb(null, mockStore?.sessions?.[id] || null));
+      this.set = jest.fn((id, sess, cb) => { if (cb) cb(null); });
+      this.touch = jest.fn((id, sess, cb) => { if (cb) cb(null); });
+    }
+  }
+  mockStore = { sessions: {} };
+  const RedisStore = jest.fn(() => {
+    const store = new MockRedisStore();
+    mockStore.store = store;
+    return store;
+  });
+  return { RedisStore };
+});
 
 let startServer;
 let app;
@@ -193,6 +214,33 @@ describe('Gateway Service Tests', () => {
         .get('/')
         .expect(200);
     });
+
+    test('injects x-user-* headers to frontend when session exists', async () => {
+      const cookieSignature = require('cookie-signature');
+
+      const sid = 'testusersession0000000001';
+      mockStore.sessions = {
+        [sid]: {
+          cookie: { maxAge: 86400000, secure: true, httpOnly: true, path: '/', sameSite: 'lax' },
+          user: { id: 42, username: 'alice', role: 'user' },
+        },
+      };
+
+      const signed = 's:' + cookieSignature.sign(sid, process.env.SESSION_SECRET);
+
+      nock('http://frontend-service:3003')
+        .get('/dashboard')
+        .matchHeader('x-user-id', '42')
+        .matchHeader('x-user-name', 'alice')
+        .matchHeader('x-user-role', 'user')
+        .reply(200, 'Dashboard HTML');
+
+      const res = await request(app)
+        .get('/dashboard')
+        .set('Cookie', `connect.sid=${encodeURIComponent(signed)}`)
+        .expect(200);
+
+      expect(res.text).toBe('Dashboard HTML');
+    });
   });
 });
-
