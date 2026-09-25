@@ -1,0 +1,101 @@
+<section class="pt-28 pb-20">
+  <div class="mx-auto max-w-7xl px-6">
+    <a href="/courses" class="inline-flex items-center gap-1 text-sm text-kube-muted transition-colors hover:text-kube-heading">
+      <svg class="size-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+      Back to courses
+    </a>
+
+    <div class="mt-6" id="course-header">
+      <div class="flex items-center gap-3">
+        <span id="course-level" class="rounded-full bg-green-500/10 px-3 py-0.5 text-xs font-medium text-green-400"></span>
+        <span id="course-lessons" class="text-xs text-kube-muted"></span>
+      </div>
+      <h1 id="course-title" class="mt-3 text-2xl font-bold text-kube-heading md:text-3xl"></h1>
+      <p id="course-description" class="mt-3 max-w-2xl text-sm text-kube-muted"></p>
+      <div id="course-tags" class="mt-3 flex flex-wrap gap-1.5"></div>
+      <div id="course-actions" class="mt-6"></div>
+    </div>
+
+    <div class="mt-10">
+      <h2 class="text-lg font-semibold text-kube-heading">Lessons</h2>
+      <div id="lessons-list" class="mt-4 divide-y divide-kube-border rounded-xl border border-kube-border bg-kube-surface">
+        <p class="px-6 py-4 text-sm text-kube-muted">Loading lessons...</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  (async function () {
+    const slug = "<%= slug %>";
+    const fetched = await Promise.all([
+      fetch("/api/courses/" + slug).then(function (r) { return r.json(); }),
+      fetch("/api/courses").then(function (r) { return r.json(); }),
+    ]);
+
+    var detail = fetched[0];
+    var listResult = fetched[1];
+    if (!detail.course) {
+      document.getElementById("course-header").innerHTML = '<p class="text-sm text-red-400">Course not found.</p>';
+      return;
+    }
+
+    var c = detail.course;
+    document.getElementById("course-level").textContent = c.level.charAt(0).toUpperCase() + c.level.slice(1);
+    document.getElementById("course-lessons").textContent = detail.lessons.length + " lessons";
+    document.getElementById("course-title").textContent = c.title;
+    document.getElementById("course-description").textContent = c.description || "";
+
+    var tags = (c.tags || "").split(",").filter(Boolean);
+    document.getElementById("course-tags").innerHTML = tags.map(function (t) {
+      return '<span class="rounded bg-kube-card px-2 py-0.5 text-xs text-kube-muted">' + t.trim() + "</span>";
+    }).join("");
+
+    var loggedIn = !!<%= currentUser ? "true" : "false" %>;
+    var enrollUrl = "/api/progress/courses/" + c.id + "/enroll";
+    document.getElementById("course-actions").innerHTML = loggedIn
+      ? '<button id="enroll-btn" data-course-id="' + c.id + '" class="rounded-lg bg-kube-primary px-4 py-2 text-sm font-medium text-kube-bg transition-colors hover:bg-kube-primary/90">Enroll in this course</button>'
+      : '<a href="/login" class="rounded-lg border border-kube-border px-4 py-2 text-sm text-kube-muted transition-colors hover:border-kube-primary/50 hover:text-kube-heading">Sign in to enroll</a>';
+
+    var enrollBtn = document.getElementById("enroll-btn");
+    if (enrollBtn) {
+      enrollBtn.addEventListener("click", async function () {
+        try {
+          var r = await fetch(enrollUrl, { method: "POST" });
+          if (r.ok) {
+            enrollBtn.textContent = "Enrolled ✓";
+            enrollBtn.disabled = true;
+          } else {
+            enrollBtn.textContent = "Error, retry";
+          }
+        } catch (e) {
+          enrollBtn.textContent = "Error, retry";
+        }
+      });
+    }
+
+    var listContainer = document.getElementById("lessons-list");
+    if (!detail.lessons || detail.lessons.length === 0) {
+      listContainer.innerHTML = '<p class="px-6 py-4 text-sm text-kube-muted">No lessons yet.</p>';
+      return;
+    }
+
+    listContainer.innerHTML = detail.lessons.map(function (lesson) {
+      return (
+        '<a href="/courses/' + slug + "/lessons/" + lesson.slug + '" class="flex items-center justify-between px-6 py-4 transition-colors hover:bg-kube-card/40">' +
+        '<div class="flex items-center gap-3">' +
+        '<span class="flex size-8 items-center justify-center rounded-lg bg-kube-primary/10 font-mono text-xs text-kube-primary">' + lesson.order_index + "</span>" +
+        "<div><p class='text-sm font-medium text-kube-heading'>" + lesson.title + "</p>" +
+        '<p class="text-xs text-kube-muted">' + (lesson.duration_minutes || 0) + " min</p></div></div>" +
+        '<svg class="size-4 text-kube-muted" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>' +
+        "</a>"
+      );
+    }).join("");
+
+    // N'oublions pas le total real lesson_count quand la liste API n'est pas dispo
+    if (listResult && listResult.courses) {
+      var match = listResult.courses.find(function (x) { return x.slug === slug; });
+      if (match) document.getElementById("course-lessons").textContent = match.lesson_count + " lessons";
+    }
+  })();
+</script>

@@ -1,0 +1,258 @@
+<section class="pt-28 pb-20">
+  <div class="mx-auto max-w-7xl px-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-kube-heading md:text-3xl">Admin — Courses content</h1>
+        <p class="mt-2 text-sm text-kube-muted">Create, edit and delete courses & lessons (Markdown).</p>
+      </div>
+      <span class="rounded bg-kube-primary/10 px-3 py-1 text-sm font-medium text-kube-primary">Admin</span>
+    </div>
+
+    <div class="mt-8 grid gap-6 lg:grid-cols-3">
+      <!-- Create course -->
+      <div class="rounded-xl border border-kube-border bg-kube-surface p-6 lg:col-span-1">
+        <h2 class="text-base font-semibold text-kube-heading">New course</h2>
+        <form id="create-course-form" class="mt-4 flex flex-col gap-3">
+          <input name="title" required placeholder="Title" class="rounded-lg border border-kube-border bg-kube-bg px-3 py-2 text-sm text-kube-heading placeholder:text-kube-muted focus:border-kube-primary/60 focus:outline-none" />
+          <input name="slug" placeholder="Slug (optional, auto-generated)" class="rounded-lg border border-kube-border bg-kube-bg px-3 py-2 text-sm text-kube-muted focus:border-kube-primary/60 focus:outline-none" />
+          <select name="level" class="rounded-lg border border-kube-border bg-kube-bg px-3 py-2 text-sm text-kube-heading focus:border-kube-primary/60 focus:outline-none">
+            <option value="beginner">Beginner</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="advanced">Advanced</option>
+            <option value="expert">Expert</option>
+          </select>
+          <textarea name="description" rows="3" placeholder="Description" class="rounded-lg border border-kube-border bg-kube-bg px-3 py-2 text-sm text-kube-heading placeholder:text-kube-muted focus:border-kube-primary/60 focus:outline-none"></textarea>
+          <input name="tags" placeholder="Tags, separated by comma" class="rounded-lg border border-kube-border bg-kube-bg px-3 py-2 text-sm text-kube-muted focus:border-kube-primary/60 focus:outline-none" />
+          <button type="submit" class="rounded-lg bg-kube-primary px-4 py-2 text-sm font-medium text-kube-bg transition-colors hover:bg-kube-primary/90">Create course</button>
+          <p id="create-feedback" class="text-xs text-kube-accent"></p>
+        </form>
+      </div>
+
+      <!-- Courses list + editor -->
+      <div class="lg:col-span-2">
+        <div id="courses-admin" class="flex flex-col gap-4">
+          <p class="text-sm text-kube-muted">Loading courses...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  async function api(path, options) {
+    const response = await fetch(path, options);
+    const body = await response.json().catch(function () { return {}; });
+    if (!response.ok) throw new Error(body.error || ("HTTP " + response.status));
+    return body;
+  }
+
+  async function refreshList() {
+    const container = document.getElementById("courses-admin");
+    container.innerHTML = '<p class="text-sm text-kube-muted">Loading courses...</p>';
+    let data;
+    try {
+      data = await api("/api/courses");
+    } catch (err) {
+      container.innerHTML = '<p class="text-sm text-red-400">' + err.message + "</p>";
+      return;
+    }
+
+    const courses = data.courses || [];
+    if (courses.length === 0) {
+      container.innerHTML = '<p class="text-sm text-kube-muted">No courses yet.</p>';
+      return;
+    }
+
+    container.innerHTML = courses.map(function (c) {
+      return (
+        '<div class="rounded-xl border border-kube-border bg-kube-surface p-6" data-course="' + c.id + '" data-slug="' + c.slug + '">' +
+        '<div class="flex items-center justify-between">' +
+        '<h3 class="text-base font-semibold text-kube-heading">' + c.title +
+        ' <span class="ml-2 text-xs text-kube-muted">' + (Number(c.lesson_count) || 0) + ' lessons</span></h3>' +
+        '<div class="flex gap-2">' +
+        '<button data-action="toggle" class="rounded-lg border border-kube-border px-3 py-1.5 text-xs text-kube-muted hover:text-kube-heading">Edit</button>' +
+        '<button data-action="delete" class="rounded-lg border border-red-500/30 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10">Delete</button>' +
+        "</div></div>" +
+
+        '<div data-course-fields hidden class="mt-4 flex flex-col gap-3 rounded-lg border border-kube-border bg-kube-bg/50 p-4">' +
+        '<input data-field="title" value="' + c.title + '" class="rounded-lg border border-kube-border bg-kube-bg px-3 py-2 text-sm text-kube-heading" />' +
+        '<input data-field="slug" value="' + (c.slug || "") + '" placeholder="slug" class="rounded-lg border border-kube-border bg-kube-bg px-3 py-2 text-sm text-kube-muted" />' +
+        '<select data-field="level" class="rounded-lg border border-kube-border bg-kube-bg px-3 py-2 text-sm text-kube-heading">' +
+        '<option ' + (c.level === "beginner" ? "selected" : "") + ' value="beginner">Beginner</option>' +
+        '<option ' + (c.level === "intermediate" ? "selected" : "") + ' value="intermediate">Intermediate</option>' +
+        '<option ' + (c.level === "advanced" ? "selected" : "") + ' value="advanced">Advanced</option>' +
+        '<option ' + (c.level === "expert" ? "selected" : "") + ' value="expert">Expert</option></select>' +
+        '<textarea data-field="description" rows="2" class="rounded-lg border border-kube-border bg-kube-bg px-3 py-2 text-sm text-kube-heading">' + (c.description || "") + "</textarea>" +
+        '<input data-field="tags" value="' + (c.tags || "") + '" placeholder="tags" class="rounded-lg border border-kube-border bg-kube-bg px-3 py-2 text-sm text-kube-muted" />' +
+        '<button data-action="save-course" class="rounded-lg bg-kube-primary px-4 py-2 text-sm font-medium text-kube-bg">Save course</button>' +
+        "<h4 class='mt-2 text-sm font-semibold text-kube-heading'>Lessons</h4>" +
+        '<div data-course-lessons class="flex flex-col gap-2"></div>' +
+        '<div class="flex flex-col gap-2 border-t border-kube-border pt-3">' +
+        '<input data-new-lesson-title placeholder="New lesson title" class="rounded-lg border border-kube-border bg-kube-bg px-3 py-2 text-sm text-kube-muted" />' +
+        '<input data-new-lesson-duration type="number" min="0" placeholder="Duration (min)" class="rounded-lg border border-kube-border bg-kube-bg px-3 py-2 text-sm text-kube-muted" />' +
+        '<textarea data-new-lesson-content rows="6" placeholder="Lesson content (Markdown)" class="rounded-lg border border-kube-border bg-kube-bg px-3 py-2 font-mono text-xs text-kube-heading"></textarea>' +
+        '<button data-action="add-lesson" class="rounded-lg border border-kube-border px-4 py-2 text-sm text-kube-muted hover:text-kube-heading">Add lesson</button>' +
+        "</div></div></div>"
+      );
+    }).join("");
+
+    // Load lessons for each course card (list endpoint is slug-based)
+    courses.forEach(function (c) {
+      loadLessons(c.slug);
+    });
+  }
+
+  async function loadLessons(slug) {
+    try {
+      const data = await api("/api/courses/" + slug);
+      const target = document.querySelector('[data-course="' + courseId + '"] [data-course-lessons]');
+      if (!target) return;
+      const lessons = data.lessons || [];
+      target.innerHTML = lessons.length === 0
+        ? '<p class="text-xs text-kube-muted">No lessons yet.</p>'
+        : lessons.map(function (l) {
+            return (
+              '<div class="flex items-center justify-between rounded-lg border border-kube-border bg-kube-bg/50 px-3 py-2">' +
+              "<div><p class='text-sm font-medium text-kube-heading'>" + l.title + "</p>" +
+              "<p class='text-xs text-kube-muted'>" + l.order_index + " • " + (l.duration_minutes || 0) + " min</p></div>" +
+              '<div class="flex gap-2">' +
+              '<button data-action="edit-lesson" data-lesson="' + l.id + '" data-slug="' + l.slug + '" data-title="' + l.title + '" data-duration="' + (l.duration_minutes || 0) + '" class="rounded-lg border border-kube-border px-3 py-1 text-xs text-kube-muted hover:text-kube-heading">Content</button>' +
+              '<button data-action="delete-lesson" data-lesson="' + l.id + '" class="rounded-lg border border-red-500/30 px-3 py-1 text-xs text-red-400 hover:bg-red-500/10">Delete</button>' +
+              '<button data-action="move-up" data-lesson="' + l.id + '" class="rounded-lg border border-kube-border px-3 py-1 text-xs text-kube-muted hover:text-kube-heading">↑</button>' +
+              "</div></div>"
+            );
+          }).join("");
+    } catch (err) {
+      console.error("Failed to load lessons for course", courseId, err);
+    }
+  }
+
+  document.addEventListener("submit", async function (event) {
+    if (event.target.id === "create-course-form") {
+      event.preventDefault();
+      const form = event.target;
+      const payload = {
+        title: form.title.value,
+        slug: form.slug.value || undefined,
+        level: form.level.value,
+        description: form.description.value,
+        tags: form.tags.value,
+      };
+      try {
+        const result = await api("/api/courses", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        document.getElementById("create-feedback").textContent = "Created: " + result.course.slug;
+        form.reset();
+        refreshList();
+      } catch (err) {
+        document.getElementById("create-feedback").textContent = "Error: " + err.message;
+        document.getElementById("create-feedback").classList.add("text-red-400");
+      }
+    }
+  });
+
+  document.addEventListener("click", async function (event) {
+    const btn = event.target.closest("button[data-action]");
+    if (!btn) return;
+    const action = btn.dataset.action;
+    const card = btn.closest("[data-course]");
+    const courseId = card ? card.dataset.course : null;
+
+    if (action === "toggle") {
+      const fields = card.querySelector("[data-course-fields]");
+      fields.hidden = !fields.hidden;
+      btn.textContent = fields.hidden ? "Edit" : "Close";
+      return;
+    }
+
+    if (action === "delete") {
+      if (!confirm("Delete this course and all its lessons?")) return;
+      try {
+        await api("/api/courses/" + courseId, { method: "DELETE" });
+        refreshList();
+      } catch (err) { alert(err.message); }
+      return;
+    }
+
+    if (action === "save-course") {
+      const payload = {};
+      ["title", "slug", "level", "description", "tags"].forEach(function (field) {
+        const el = card.querySelector('[data-field="' + field + '"]');
+        if (el) payload[field] = el.value;
+      });
+      if (!payload.title) return alert("Title required");
+      try {
+        await api("/api/courses/" + courseId, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        refreshList();
+      } catch (err) { alert(err.message); }
+      return;
+    }
+
+    if (action === "add-lesson") {
+      const title = card.querySelector("[data-new-lesson-title]").value;
+      if (!title) return alert("Lesson title required");
+      const payload = {
+        title: title,
+        duration_minutes: parseInt(card.querySelector("[data-new-lesson-duration]").value || "0", 10),
+        content: card.querySelector("[data-new-lesson-content]").value,
+      };
+      try {
+        await api("/api/courses/" + courseId + "/lessons", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        card.querySelector("[data-new-lesson-title]").value = "";
+        card.querySelector("[data-new-lesson-duration]").value = "";
+        card.querySelector("[data-new-lesson-content]").value = "";
+        loadLessons(courseId);
+        refreshList();
+      } catch (err) { alert(err.message); }
+      return;
+    }
+
+    if (action === "edit-lesson") {
+      const title = prompt("Lesson title", btn.dataset.title || "");
+      if (title === null) return;
+      const duration = prompt("Duration (min)", btn.dataset.duration || "0");
+      const content = prompt("Lesson content (Markdown - multiline tolerated)", "Write markdown here...");
+      if (content === null) return;
+      const payload = { title: title, duration_minutes: parseInt(duration || "0", 10) };
+      if (content !== "") payload.content = content;
+      try {
+        await api("/api/courses/" + courseId + "/lessons/" + btn.dataset.lesson, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        loadLessons(courseId);
+        refreshList();
+      } catch (err) { alert(err.message); }
+      return;
+    }
+
+    if (action === "delete-lesson") {
+      if (!confirm("Delete this lesson?")) return;
+      try {
+        await api("/api/courses/" + courseId + "/lessons/" + btn.dataset.lesson, { method: "DELETE" });
+        loadLessons(courseId);
+        refreshList();
+      } catch (err) { alert(err.message); }
+      return;
+    }
+
+    if (action === "move-up") {
+      // Reorder is handled via order_index on save; keep simple: refresh
+      loadLessons(courseId);
+    }
+  });
+
+  refreshList();
+</script>

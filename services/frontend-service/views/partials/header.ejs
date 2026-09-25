@@ -11,16 +11,16 @@
     </a>
 
     <div class="hidden items-center gap-8 md:flex">
-      <a href="#courses" class="text-sm text-kube-muted transition-colors hover:text-kube-heading">Courses</a>
-      <a href="#paths" class="text-sm text-kube-muted transition-colors hover:text-kube-heading">Learning Paths</a>
-      <a href="#pricing" class="text-sm text-kube-muted transition-colors hover:text-kube-heading">Pricing</a>
-      <a href="#community" class="text-sm text-kube-muted transition-colors hover:text-kube-heading">Community</a>
+      <a href="/courses" class="text-sm text-kube-muted transition-colors hover:text-kube-heading">Courses</a>
+      <a href="/dashboard" class="text-sm text-kube-muted transition-colors hover:text-kube-heading">Dashboard</a>
+      <% if (typeof user !== 'undefined' && user && String(user.role).toLowerCase() === 'admin') { %>
+        <a href="/admin/courses" class="text-sm text-kube-muted transition-colors hover:text-kube-heading">Admin</a>
+      <% } %>
     </div>
 
     <div class="hidden items-center gap-3 md:flex">
       <% if (typeof user !== 'undefined' && user) { %>
         <span class="text-sm text-kube-primary">Welcome <%= user.username %></span>
-        <a href="/dashboard" class="rounded-lg px-4 py-2 text-sm text-kube-muted transition-colors hover:text-kube-heading hover:bg-kube-surface">Dashboard</a>
         <a href="/logout" class="rounded-lg border border-kube-border px-4 py-2 text-sm text-kube-muted transition-colors hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400">Logout</a>
       <% } else { %>
         <a href="/login" class="rounded-lg px-4 py-2 text-sm text-kube-muted transition-colors hover:text-kube-heading hover:bg-kube-surface">Sign In</a>
@@ -36,14 +36,14 @@
 
   <div id="mobile-menu" class="hidden border-t border-kube-border/50 bg-kube-bg px-6 py-6 md:hidden">
     <div class="flex flex-col gap-4">
-      <a href="#courses" class="text-sm text-kube-muted transition-colors hover:text-kube-heading">Courses</a>
-      <a href="#paths" class="text-sm text-kube-muted transition-colors hover:text-kube-heading">Learning Paths</a>
-      <a href="#pricing" class="text-sm text-kube-muted transition-colors hover:text-kube-heading">Pricing</a>
-      <a href="#community" class="text-sm text-kube-muted transition-colors hover:text-kube-heading">Community</a>
+      <a href="/courses" class="text-sm text-kube-muted transition-colors hover:text-kube-heading">Courses</a>
+      <a href="/dashboard" class="text-sm text-kube-muted transition-colors hover:text-kube-heading">Dashboard</a>
+      <% if (typeof user !== 'undefined' && user && String(user.role).toLowerCase() === 'admin') { %>
+        <a href="/admin/courses" class="text-sm text-kube-muted transition-colors hover:text-kube-heading">Admin</a>
+      <% } %>
       <div class="mt-4 flex flex-col gap-3">
         <% if (typeof user !== 'undefined' && user) { %>
           <span class="text-sm text-kube-primary">Welcome, <%= user.username %></span>
-          <a href="/dashboard" class="rounded-lg border border-kube-border px-4 py-2 text-center text-sm text-kube-muted hover:text-kube-heading">Dashboard</a>
           <a href="/logout" class="rounded-lg border border-red-500/30 px-4 py-2 text-center text-sm text-red-400 hover:bg-red-500/10">Logout</a>
         <% } else { %>
           <a href="/login" class="rounded-lg border border-kube-border px-4 py-2 text-center text-sm text-kube-muted hover:text-kube-heading">Sign In</a>

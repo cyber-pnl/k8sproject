@@ -1,0 +1,122 @@
+<section class="pt-28 pb-20">
+  <div class="mx-auto max-w-4xl px-6">
+    <a href="/courses/<%= slug %>" class="inline-flex items-center gap-1 text-sm text-kube-muted transition-colors hover:text-kube-heading">
+      <svg class="size-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+      Back to course
+    </a>
+
+    <div class="mt-6 flex items-center justify-between gap-4">
+      <div>
+        <p id="lesson-course" class="text-xs text-kube-muted"></p>
+        <h1 id="lesson-title" class="mt-1 text-2xl font-bold text-kube-heading md:text-3xl">Loading lesson...</h1>
+      </div>
+      <button id="complete-btn" class="hidden shrink-0 rounded-lg border border-kube-border px-4 py-2 text-sm text-kube-muted transition-colors hover:border-kube-accent/50 hover:text-kube-accent">
+        Mark as complete
+      </button>
+    </div>
+
+    <div class="mt-8">
+      <article id="lesson-content" class="prose prose-invert max-w-none text-kube-text">
+        <p class="text-sm text-kube-muted">Loading content...</p>
+      </article>
+    </div>
+
+    <div class="mt-10 flex items-center justify-between border-t border-kube-border pt-6">
+      <a id="prev-link" href="#" class="hidden text-sm text-kube-muted transition-colors hover:text-kube-heading">← Previous</a>
+      <span></span>
+      <a id="next-link" href="#" class="hidden text-sm text-kube-muted transition-colors hover:text-kube-heading">Next →</a>
+    </div>
+  </div>
+</section>
+
+<style>
+  #lesson-content h1, #lesson-content h2, #lesson-content h3,
+  #lesson-content h4, #lesson-content h5, #lesson-content h6 {
+    color: #f1f5f9;
+    font-weight: 700;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+    line-height: 1.25;
+  }
+  #lesson-content h1 { font-size: 1.5rem; }
+  #lesson-content h2 { font-size: 1.3rem; }
+  #lesson-content h3 { font-size: 1.1rem; }
+  #lesson-content p { color: #e2e8f0; line-height: 1.7; margin: 0.75em 0; }
+  #lesson-content a { color: #38bdf8; text-decoration: underline; }
+  #lesson-content ul, #lesson-content ol { margin: 0.75em 0 0.75em 1.25em; color: #e2e8f0; }
+  #lesson-content ul { list-style: disc; }
+  #lesson-content ol { list-style: decimal; }
+  #lesson-content li { margin: 0.25em 0; }
+  #lesson-content pre {
+    background: #0b1220; border: 1px solid #243352; border-radius: 0.5rem;
+    padding: 1rem; overflow-x: auto; margin: 1em 0;
+  }
+  #lesson-content code { font-family: 'JetBrains Mono', monospace; font-size: 0.875em; color: #2dd4bf; }
+  #lesson-content pre code { color: #e2e8f0; }
+  #lesson-content blockquote {
+    border-left: 3px solid #38bdf8; padding-left: 1rem; color: #94a3b8; margin: 1em 0;
+  }
+  #lesson-content table { width: 100%; border-collapse: collapse; margin: 1em 0; }
+  #lesson-content th, #lesson-content td { border: 1px solid #243352; padding: 0.5rem 0.75rem; text-align: left; }
+  #lesson-content img { max-width: 100%; border-radius: 0.5rem; }
+</style>
+
+<script>
+  (async function () {
+    const slug = "<%= slug %>";
+    const lessonSlug = "<%= lessonSlug %>";
+
+    try {
+      const contentResponse = await fetch("/api/courses/" + slug + "/lessons/" + lessonSlug);
+      if (!contentResponse.ok) throw new Error("HTTP " + contentResponse.status);
+      const data = await contentResponse.json();
+
+      const courseResponse = await fetch("/api/courses/" + slug).then(function (r) { return r.json(); });
+      const lessons = (courseResponse && courseResponse.lessons) || [];
+
+      document.getElementById("lesson-course").textContent = data.course.title;
+      document.getElementById("lesson-title").textContent = data.lesson.title;
+      document.getElementById("lesson-content").innerHTML = data.contentHtml || "<p>No content yet.</p>";
+
+      const btn = document.getElementById("complete-btn");
+      btn.classList.remove("hidden");
+      function render() {
+        btn.textContent = data.completed ? "Completed ✓" : "Mark as complete";
+        btn.className = "shrink-0 rounded-lg px-4 py-2 text-sm transition-colors " +
+          (data.completed
+            ? "bg-kube-accent/15 border border-kube-accent/40 text-kube-accent"
+            : "border border-kube-border text-kube-muted hover:border-kube-accent/50 hover:text-kube-accent");
+      }
+      render();
+
+      btn.addEventListener("click", async function () {
+        const method = data.completed ? "DELETE" : "POST";
+        const r = await fetch("/api/progress/courses/" + data.course.id + "/lessons/" + data.lesson.id + "/complete", { method: method });
+        if (r.ok) {
+          const body = await r.json();
+          data.completed = body.completed;
+          render();
+        }
+      });
+
+      if (lessons.length > 0) {
+        const idx = lessons.findIndex(function (l) { return l.slug === lessonSlug; });
+        if (idx > 0) {
+          const prev = lessons[idx - 1];
+          document.getElementById("prev-link").href = "/courses/" + slug + "/lessons/" + prev.slug;
+          document.getElementById("prev-link").classList.remove("hidden");
+        }
+        if (idx >= 0 && idx < lessons.length - 1) {
+          const next = lessons[idx + 1];
+          document.getElementById("next-link").href = "/courses/" + slug + "/lessons/" + next.slug;
+          document.getElementById("next-link").classList.remove("hidden");
+        }
+      }
+    } catch (err) {
+      document.getElementById("lesson-title").textContent = "Lesson not found";
+      document.getElementById("lesson-content").innerHTML =
+        '<p class="text-sm text-red-400">Impossible de charger la leçon : ' + err.message + "</p>";
+      console.error(err);
+    }
+  })();
+</script>

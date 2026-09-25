@@ -1,0 +1,92 @@
+<section class="pt-28 pb-20">
+  <div class="mx-auto max-w-7xl px-6">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-kube-heading md:text-3xl">Courses</h1>
+        <p class="mt-2 text-sm text-kube-muted">Master Kubernetes step by step.</p>
+      </div>
+      <% if (currentUser && String(currentUser.role).toLowerCase() === 'admin') { %>
+        <a href="/admin/courses" class="inline-flex items-center gap-2 rounded-lg border border-kube-border px-4 py-2 text-sm text-kube-muted transition-colors hover:border-kube-primary/50 hover:text-kube-heading">
+          Gérer les cours (Admin)
+        </a>
+      <% } %>
+    </div>
+
+    <div id="courses-grid" class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <p class="col-span-full text-sm text-kube-muted">Loading courses...</p>
+    </div>
+  </div>
+</section>
+
+<script>
+  (async function () {
+    const grid = document.getElementById("courses-grid");
+
+    const levelColors = {
+      beginner: "bg-green-500/10 text-green-400",
+      intermediate: "bg-yellow-500/10 text-yellow-400",
+      advanced: "bg-red-500/10 text-red-400",
+      expert: "bg-purple-500/10 text-purple-400",
+    };
+
+    function badge(level) {
+      const cls = levelColors[level] || levelColors.beginner;
+      return '<span class="rounded-full ' + cls + ' px-3 py-0.5 text-xs font-medium">' +
+        (level || "beginner").charAt(0).toUpperCase() + (level || "beginner").slice(1) + "</span>";
+    }
+
+    try {
+      const response = await fetch("/api/courses");
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      const { courses } = await response.json();
+
+      if (!courses || courses.length === 0) {
+        grid.innerHTML = '<p class="col-span-full text-sm text-kube-muted">Aucun cours disponible pour le moment.</p>';
+        return;
+      }
+
+      const loggedIn = !!<%= currentUser ? "true" : "false" %>;
+      grid.innerHTML = courses.map(function (c) {
+        var tags = (c.tags || "").split(",").filter(Boolean).slice(0, 3);
+        var tagHtml = tags.map(function (t) {
+          return '<span class="rounded bg-kube-card px-2 py-0.5 text-xs text-kube-muted">' + t.trim() + "</span>";
+        }).join("");
+
+        var enroll = loggedIn
+          ? '<form data-enroll data-course-id="' + c.id + '">' +
+            '<button type="submit" class="w-full rounded-lg bg-kube-primary px-4 py-2 text-sm font-medium text-kube-bg transition-colors hover:bg-kube-primary/90">Enroll</button>' +
+            "</form>"
+          : '<a href="/login" class="block rounded-lg border border-kube-border px-4 py-2 text-center text-sm text-kube-muted transition-colors hover:border-kube-primary/50 hover:text-kube-heading">Sign in to enroll</a>';
+
+        return (
+          '<div class="flex flex-col rounded-xl border border-kube-border bg-kube-surface p-5">' +
+          '<div class="flex items-center justify-between">' + badge(c.level) +
+          '<span class="text-xs text-kube-muted">' + (Number(c.lesson_count) || 0) + " lessons</span></div>" +
+          '<a href="/courses/' + c.slug + '"><h3 class="mt-3 text-sm font-semibold text-kube-heading hover:text-kube-primary">' + c.title + "</h3></a>" +
+          '<p class="mt-2 flex-1 text-sm text-kube-muted">' + (c.description || "") + "</p>" +
+          '<div class="mt-3 flex flex-wrap gap-1.5">' + tagHtml + "</div>" +
+          '<div class="mt-5">' + enroll + "</div></div>"
+        );
+      }).join("");
+    } catch (err) {
+      grid.innerHTML = '<p class="col-span-full text-sm text-red-400">Failed to load courses.</p>';
+      console.error(err);
+    }
+  })();
+
+  document.addEventListener("click", async function (event) {
+    const form = event.target.closest("form[data-enroll]");
+    if (!form) return;
+    event.preventDefault();
+    const courseId = form.dataset.courseId;
+    const btn = form.querySelector("button");
+    try {
+      const response = await fetch("/api/progress/courses/" + courseId + "/enroll", { method: "POST" });
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      form.innerHTML = '<p class="text-center text-sm font-medium text-kube-primary">Enrolled ✓</p>';
+    } catch (err) {
+      btn.textContent = "Error, retry";
+      console.error(err);
+    }
+  });
+</script>

@@ -84,6 +84,51 @@ app.get("/signup", (req, res) => {
 
 app.get("/logout", (req, res) => res.redirect("/"));
 
+// ── Cours (KubeLearn content) ──────────────────────────────────
+app.get("/courses", (req, res) => {
+  res.render("courses", {
+    title: "Courses | KubeLearn",
+    description: "Browse Kubernetes courses",
+    user: res.locals.user,
+    currentUser: res.locals.currentUser,
+  });
+});
+
+app.get("/courses/:slug", (req, res) => {
+  res.render("course-detail", {
+    title: "Course | KubeLearn",
+    description: "Kubernetes course",
+    user: res.locals.user,
+    currentUser: res.locals.currentUser,
+    slug: req.params.slug,
+  });
+});
+
+app.get("/courses/:slug/lessons/:lessonSlug", (req, res) => {
+  if (!res.locals.user) return res.redirect("/login");
+  res.render("lesson", {
+    title: "Lesson | KubeLearn",
+    description: "Kubernetes lesson",
+    user: res.locals.user,
+    currentUser: res.locals.currentUser,
+    slug: req.params.slug,
+    lessonSlug: req.params.lessonSlug,
+  });
+});
+
+// ── Admin : gestion des cours (nécessite le rôle admin) ────────
+app.get("/admin/courses", (req, res) => {
+  const role = String(res.locals.user?.role || "").toLowerCase();
+  if (!res.locals.user) return res.redirect("/login");
+  if (role !== "admin") return res.status(403).send("Access denied - admin only");
+  res.render("admin/courses", {
+    title: "Admin Courses | KubeLearn",
+    description: "Manage Kubernetes courses content",
+    user: res.locals.user,
+    currentUser: res.locals.currentUser,
+  });
+});
+
 app.use((req, res) => res.status(404).send("Page not found"));
 app.use((err, req, res, next) => {
   console.error("Frontend Service error:", err);
