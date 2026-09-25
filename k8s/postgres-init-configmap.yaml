@@ -12,14 +12,15 @@ data:
         id SERIAL PRIMARY KEY,
         username VARCHAR(100) UNIQUE NOT NULL,
         password TEXT NOT NULL,
-        role VARCHAR(20) NOT NULL DEFAULT 'USER'
+        role VARCHAR(20) NOT NULL DEFAULT 'user',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
       INSERT INTO users (username, password, role)
       VALUES (
         'admin',
         '$ADMIN_HASHED_PASSWORD',
-        'ADMIN'
+        'admin'
       )
       ON CONFLICT (username) DO NOTHING;
     EOSQL

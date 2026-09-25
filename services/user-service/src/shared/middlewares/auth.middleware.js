@@ -28,7 +28,7 @@ function isAuthenticated(req, res, next) {
 function isAdmin(req, res, next) {
   const userRole = req.headers["x-user-role"] || (req.session && req.session.user && req.session.user.role);
 
-  if (userRole === "admin") {
+  if (String(userRole || "").toLowerCase() === "admin") {
     return next();
   }
 

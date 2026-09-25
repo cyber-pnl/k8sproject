@@ -29,6 +29,15 @@ async function initDatabase() {
       );
     `);
 
+    // Idempotent migrations (prod DB was initialized without created_at / with
+    // uppercase roles 'USER'/'ADMIN' by the k8s init script)
+    await pool.query(
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`
+    );
+    await pool.query(
+      `UPDATE users SET role = LOWER(role) WHERE role = UPPER(role) AND role <> LOWER(role);`
+    );
+
     console.log("[OK] Users table ready");
   } catch (err) {
     console.error("[ERROR] PostgreSQL init error:", err);
