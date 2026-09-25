@@ -57,6 +57,15 @@ module "ec2_k3s" {
   default_tags  = local.default_tags
 }
 
+# ── 3. CONTENU DES COURS (Bucket S3 privé + IAM user) ───────────
+module "content_s3" {
+  source = "../../modules/s3"
+
+  project_name  = local.project_name
+  environment   = local.environment
+  default_tags  = local.default_tags
+}
+
 # ── 3. ATTENDRE QUE L'API K3S ET ARGOCD SOIENT PRÊTS ─────────
 resource "null_resource" "wait_for_k3s" {
   depends_on = [module.ec2_k3s]

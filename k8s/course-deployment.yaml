@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: course-service
+  namespace: default
+  labels:
+    app: course-service
+    tier: backend
+
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: course-service
+  template:
+    metadata:
+      labels:
+        app: course-service
+        tier: backend
+    spec:
+      containers:
+        - name: course-service
+          image: ghcr.io/cyber-pnl/k8sproject/course-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3004
+          envFrom:
+            - secretRef:
+                name: app-secret
+            - secretRef:
+                name: postgres-secret
+            - secretRef:
+                name: s3-secret
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"

@@ -83,3 +83,7 @@ log/
 tmp/
 temp/
 *.pem
+
+# Test output / coverage
+**/coverage/
+**/jest-report.xml
