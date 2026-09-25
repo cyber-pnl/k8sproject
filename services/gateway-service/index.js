@@ -19,6 +19,17 @@ app.set("trust proxy", 1);
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || "http://auth-service:3001";
 const USER_SERVICE_URL = process.env.USER_SERVICE_URL || "http://user-service:3002";
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://frontend-service:3003";
+const COURSE_SERVICE_URL = process.env.COURSE_SERVICE_URL || "http://course-service:3004";
+
+// Injecte les headers utilisateur (session Redis) vers les services proxifiés
+function injectUserHeaders(proxyReq, req) {
+  // Conversion stricte en String pour éviter les crashs de setHeader
+  if (req.session && req.session.user) {
+    proxyReq.setHeader("x-user-id", String(req.session.user.id));
+    proxyReq.setHeader("x-user-role", String(req.session.user.role || "user"));
+    proxyReq.setHeader("x-user-name", String(req.session.user.username));
+  }
+}
 
 // ========================
 // SHARED SETUP FUNCTION - USED BY TEST AND PROD
@@ -82,7 +93,7 @@ function commonSetup(redisStore) {
       req.session.user = {
         id: userData.user.id,
         username: userData.user.username,
-        role: userData.user.role,
+        role: String(userData.user.role || "user").toLowerCase(),
       };
 
       await req.session.save();
@@ -123,7 +134,7 @@ function commonSetup(redisStore) {
       req.session.user = {
         id: userData.user.id,
         username: userData.user.username,
-        role: userData.user.role,
+        role: String(userData.user.role || "user").toLowerCase(),
       };
 
       await req.session.save();
@@ -148,6 +159,30 @@ function commonSetup(redisStore) {
   // PROXIES (AVANT LE STATIC / VIEW PARSERS)
   // ========================
 
+  // COURSE service — AVANT le proxy "/api"
+  app.use(
+    "/api/courses",
+    createProxyMiddleware({
+      target: COURSE_SERVICE_URL,
+      changeOrigin: true,
+      on: {
+        proxyReq: injectUserHeaders,
+      },
+    })
+  );
+
+  // COURSE progress — AVANT le proxy "/api"
+  app.use(
+    "/api/progress",
+    createProxyMiddleware({
+      target: COURSE_SERVICE_URL,
+      changeOrigin: true,
+      on: {
+        proxyReq: injectUserHeaders,
+      },
+    })
+  );
+
   // API Routes — AVANT le proxy "/"
   app.use(
     "/api",
@@ -156,14 +191,7 @@ function commonSetup(redisStore) {
       changeOrigin: true,
       pathRewrite: { "^/api": "" },
       on: {
-        proxyReq: (proxyReq, req) => {
-          if (req.session && req.session.user) {
-            // Conversion stricte en String pour éviter les crashs de setHeader
-            proxyReq.setHeader("x-user-id", String(req.session.user.id));
-            proxyReq.setHeader("x-user-role", String(req.session.user.role || "user"));
-            proxyReq.setHeader("x-user-name", String(req.session.user.username));
-          }
-        },
+        proxyReq: (proxyReq, req) => injectUserHeaders(proxyReq, req),
       },
     })
   );
@@ -178,10 +206,7 @@ function commonSetup(redisStore) {
         proxyReq: (proxyReq, req) => {
           console.log("🔍 [PROXY /] URL:", req.url, "| Session user:", req.session?.user?.username || "aucun");
           if (req.session && req.session.user) {
-            // Conversion stricte en String
-            proxyReq.setHeader("x-user-id", String(req.session.user.id));
-            proxyReq.setHeader("x-user-role", String(req.session.user.role || "user"));
-            proxyReq.setHeader("x-user-name", String(req.session.user.username));
+            injectUserHeaders(proxyReq, req);
             console.log("✅ Headers envoyés à frontend pour", req.session.user.username);
           } else {
             console.log("❌ Pas de session pour:", req.url);
