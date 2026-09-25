@@ -161,8 +161,8 @@ function commonSetup(redisStore) {
 
   // COURSE service — AVANT le proxy "/api"
   app.use(
-    "/api/courses",
     createProxyMiddleware({
+      pathFilter: "/api/courses",
       target: COURSE_SERVICE_URL,
       changeOrigin: true,
       on: {
@@ -173,8 +173,8 @@ function commonSetup(redisStore) {
 
   // COURSE progress — AVANT le proxy "/api"
   app.use(
-    "/api/progress",
     createProxyMiddleware({
+      pathFilter: "/api/progress",
       target: COURSE_SERVICE_URL,
       changeOrigin: true,
       on: {
@@ -184,12 +184,13 @@ function commonSetup(redisStore) {
   );
 
   // API Routes — AVANT le proxy "/"
+  // NB: montage SANS préfixe + pathFilter pour que user-service reçoive
+  // l'URL complète ("/api/users"...), sinon le préfixe monté est retiré.
   app.use(
-    "/api",
     createProxyMiddleware({
+      pathFilter: "/api",
       target: USER_SERVICE_URL,
       changeOrigin: true,
-      pathRewrite: { "^/api": "" },
       on: {
         proxyReq: (proxyReq, req) => injectUserHeaders(proxyReq, req),
       },

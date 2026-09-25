@@ -197,7 +197,7 @@ describe('Gateway Service Tests', () => {
   describe('Proxy Middleware', () => {
     test('proxy /api passes through', async () => {
       nock('http://user-service:3002')
-        .get('/users')
+        .get('/api/users')
         .reply(200, []);
 
       const res = await request(app)
