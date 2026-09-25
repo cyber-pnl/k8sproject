@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: course-service
-          image: ghcr.io/cyber-pnl/k8sproject/course-service:10d0c8ebda2fe81df953b0d1aa11d70f6d4f0904
+          image: ghcr.io/cyber-pnl/k8sproject/course-service:fd43cd3c4c42516a07b839d947ce5f341d5309a4
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3004
