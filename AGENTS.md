@@ -2,18 +2,25 @@
 
 ## Contexte
 - Monorepo Node.js 20 (Express) avec workspaces npm. Microservices :
-  - `services/gateway-service` (port 3000) — session, `/login`, `/signup`, `/logout`, proxies `/api` (→ user:3002) et `/` (→ frontend:3003)
+  - `services/gateway-service` (port 3000) — session, `/login`, `/signup`, `/logout`, proxies `/api` (→ user:3002), `/api/courses` et `/api/progress` (→ course:3004), `/` (→ frontend:3003)
   - `services/auth-service` (3001) — `/auth/verify`, `/auth/register`
-  - `services/user-service` (3002) — API métier
+  - `services/user-service` (3002) — API métier, table `users`
+  - `services/course-service` (3004) — catalogue de cours + progression. Contenu des leçons en Markdown dans un bucket **S3** (`courses/<courseId>/<lessonId>.md`) lu via `@aws-sdk/client-s3`, rendu `marked`. Endpoints : liste/détail cours (public), leçons (auth), CRUD admin, `/api/progress*` (auth). Tables `courses`, `lessons`, `enrollments`, `lesson_progress`.
   - `services/frontend-service` (3003) — EJS, lit les headers `x-user-*` injectés par le gateway
 - Infra de prod : k3s + ArgoCD + Traefik sur EC2. Domaine : `https://kubelearn.duckdns.org` (HTTPS).
 
 ## Git & GitOps (IMPORTANT)
 - **Tout changement qui doit atteindre la prod passe par `git push` sur `main`.** ArgoCD (`argocd-app.yaml`) est en auto-sync/selfHeal/prune sur le dossier `k8s/`. Aucun autre moyen de déployer.
 - **Commits conventionnels obligatoires** : `fix(...)`, `feat(...)`, `chore(...)`, `docs(...)`, `test(...)`. Ex. : `fix(auth): redirect users to dashboard after login or signup`. Regarder le style des commits récents avant de committer.
-- Le CI (`.github/workflows/CI.yml`) sur push→main exécute lint → test → security → `build-push` (images GHCR taggées par SHA) → `delivery` qui met à jour les tags dans `k8s/*-deployment.yaml` via un commit `chore: update images to <sha> [skip ci]`. Ce commit ne déclenche pas la CI (`[skip ci]`).
+- Le CI (`.github/workflows/CI.yml`) sur push→main exécute lint → test → security → `build-push` (images GHCR taggées par SHA) → `delivery` qui met à jour les tags dans `k8s/*-deployment.yaml` via un commit `chore: update images to <sha> [skip ci]`. Ce commit ne déclenche pas la CI (`[skip ci]`). Matrices : auth, user, gateway, course (+ frontend pour build-push).
 - **Ne JAMAIS modifier à la main** les manifests `k8s/` déployés au cluster : ArgoCD self-heal les écraserait. Toute modif passe par git.
 - Après un push, attendre tout le pipeline CI + le sync ArgoCD avant de vérifier en prod (voir le skill `kubelearn-gitops`).
+
+## Secrets k8s (créés via `kubectl create secret`, JAMAIS dans git)
+- `app-secret` — `SESSION_SECRET`
+- `postgres-secret` — `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`
+- `s3-secret` — `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `S3_BUCKET` (contourner le module terraform `terraform/modules/s3`, IAM user `kubelearn-content-prod` ; le bucket est privé, `kubelearn-content-prod-<account>`—récupérer la valeur dans les outputs terraform : `terraform output content_s3_secret_access_key`)
+- `admin-credentials` — seed du user admin
 
 ## Sécurité
 - Ne jamais committer de secrets : clés AWS (les creds AWS fournies par l'utilisateur, compte `764214840598`, région `us-west-2`), `SESSION_SECRET`, `.pem`, `*.tfplan`, `tfplan`. Ils sont (ou doivent être) dans `.gitignore`.
@@ -21,12 +28,14 @@
 
 ## Tests & lint
 - Tests unitaires Jest par service (`services/*/jest.config.js`), supertest + nock.
-- Lancer les tests : `npm test --workspace <service>`. La CI couvre auth, user, gateway.
+- Lancer les tests : `npm test --workspace <service>`. La CI couvre auth, user, gateway, course.
 - Le lint local est cassé (eslint 8 + `eslint.config.mjs` → `ERR_PACKAGE_PATH_NOT_EXPORTED`) et non bloquant en CI (le job lint se termine toujours à `0`). Ne pas y consacrer du temps inutile.
 - **Important** : `jest.mock('connect-redis')` dans les tests gateway utilise un mock avec factory (voir `services/gateway-service/tests/index.test.js`). Ne pas casser le mock du store de session.
 
 ## Pièges connus
 - `http-proxy-middleware` v3+ **ignore l'option legacy `onProxyReq`**. Utiliser l'API v3 : `on: { proxyReq: (proxyReq, req, res) => {} }`. Déjà corrigé dans `services/gateway-service/index.js`. Toujours vérifier la version installée avec `node -p "require('http-proxy-middleware/package.json').version"` avant d'ajouter des options de proxy.
+- Les rôles sont en lowercase partout (`role='data'`→ non, `'admin'`/`'user'`) : comparer avec `String(role).toLowerCase()`. Migrations idempotentes (`ALTER TABLE ... ADD COLUMN IF NOT EXISTS`, `UPDATE users SET role = LOWER(role)`) dans auth/user/course services.
+- Les proxies `/api/courses` et `/api/progress` du gateway DOIVENT être déclarés AVANT le proxy `/api` (sinon matchés par erreur).
 - Le frontend décide l'authentification uniquement via les headers `x-user-id`/`x-user-role`/`x-user-name` injectés par le gateway (jamais par cookie direct). Si le dashboard renvoie vers `/login`, c'est que ces headers ne sont pas injectés.
 - Session dispo dans Redis (`sess:<sid>`) même quand le bug headers se produit : cookie+Rédis ne sont pas forcément en cause.
 
