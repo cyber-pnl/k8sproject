@@ -87,10 +87,20 @@ router.delete("/api/courses/:courseId/lessons/:lessonId", isAdmin, async (req, r
   }
 });
 
+// Contenu markdown brut d'une leçon (édition admin)
+router.get("/api/courses/:courseId/lessons/:lessonId/content", isAdmin, async (req, res) => {
+  try {
+    const result = await service.getLessonRawContent(req.params.courseId, req.params.lessonId);
+    res.json(result);
+  } catch (err) {
+    handleError(res, err);
+  }
+});
+
 // ── Progression (le contenu des leçons requiert une session) ───
 router.get("/api/courses/:slug/lessons/:lessonSlug", isAuthenticated, async (req, res) => {
   try {
-    const result = await service.getLessonContent(req.user.id, req.params.slug, req.params.lessonSlug);
+    const result = await service.getLessonContent(req.user.id, req.params.slug, req.params.lessonSlug, req.user.role);
     res.json(result);
   } catch (err) {
     handleError(res, err);

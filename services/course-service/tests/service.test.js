@@ -88,6 +88,7 @@ describe("course service", () => {
       query
         .mockResolvedValueOnce({ rows: [course] })
         .mockResolvedValueOnce({ rows: [{ id: 1, title: "Intro", slug: "intro", order_index: 0 }] })
+        .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // enrollment found
         .mockResolvedValueOnce({ rows: [lesson] })
         .mockResolvedValueOnce({ rows: [] });
     });
@@ -96,7 +97,7 @@ describe("course service", () => {
       client.get.mockResolvedValue(null);
       s3.getObject.mockResolvedValue("# RBAC\n\nLes rôles");
 
-      const result = await service.getLessonContent("7", "k8s-advanced", "rbac");
+      const result = await service.getLessonContent("7", "k8s-advanced", "rbac", "user");
 
       expect(s3.getObject).toHaveBeenCalledWith("courses/5/10.md");
       expect(result.contentHtml).toBe("<p># RBAC\n\nLes rôles</p>");
@@ -117,12 +118,41 @@ describe("course service", () => {
         .mockReset()
         .mockResolvedValueOnce({ rows: [course] })
         .mockResolvedValueOnce({ rows: [] }) // lessons list (getCourseBySlug)
+        .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // enrollment found
         .mockResolvedValueOnce({ rows: [lesson] })
         .mockResolvedValueOnce({ rows: [{ id: 1 }] }); // progress found
 
-      const result = await service.getLessonContent("7", "k8s-advanced", "rbac");
+      const result = await service.getLessonContent("7", "k8s-advanced", "rbac", "user");
 
       expect(result.completed).toBe(true);
+    });
+
+    it("throws 403 when user is not enrolled", async () => {
+      query
+        .mockReset()
+        .mockResolvedValueOnce({ rows: [course] })
+        .mockResolvedValueOnce({ rows: [] }) // lessons list
+        .mockResolvedValueOnce({ rows: [] }); // enrollment empty
+
+      await expect(service.getLessonContent("7", "k8s-advanced", "rbac", "user")).rejects.toMatchObject({
+        status: 403,
+      });
+    });
+
+    it("allows admin to read lesson without enrolling", async () => {
+      client.get.mockResolvedValue(null);
+      s3.getObject.mockResolvedValue("contenu");
+      query
+        .mockReset()
+        .mockResolvedValueOnce({ rows: [course] })
+        .mockResolvedValueOnce({ rows: [] }) // lessons list
+        .mockResolvedValueOnce({ rows: [lesson] })
+        .mockResolvedValueOnce({ rows: [] }); // progress
+
+      const result = await service.getLessonContent("1", "k8s-advanced", "rbac", "admin");
+
+      expect(result.contentHtml).toBe("<p>contenu</p>");
+      expect(result.completed).toBe(false);
     });
 
     it("throws 404 when lesson does not exist", async () => {
@@ -131,11 +161,43 @@ describe("course service", () => {
         .mockReset()
         .mockResolvedValueOnce({ rows: [course] })
         .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // enrollment found
         .mockResolvedValueOnce({ rows: [] });
 
-      await expect(service.getLessonContent("7", "k8s-advanced", "nope")).rejects.toMatchObject({
+      await expect(service.getLessonContent("7", "k8s-advanced", "nope", "user")).rejects.toMatchObject({
         status: 404,
       });
+    });
+  });
+
+  describe("getLessonRawContent", () => {
+    const lesson = { id: 10, course_id: 5, s3_key: "courses/5/10.md" };
+
+    it("returns the markdown from S3", async () => {
+      client.get.mockResolvedValue(null);
+      s3.getObject.mockResolvedValue("# RBAC\n\nraw");
+      query.mockResolvedValueOnce({ rows: [lesson] });
+
+      const result = await service.getLessonRawContent("5", "10");
+
+      expect(s3.getObject).toHaveBeenCalledWith("courses/5/10.md");
+      expect(result.content).toBe("# RBAC\n\nraw");
+    });
+
+    it("uses the cached markdown when present", async () => {
+      client.get.mockResolvedValue(JSON.stringify("# cached"));
+      query.mockResolvedValueOnce({ rows: [lesson] });
+
+      const result = await service.getLessonRawContent("5", "10");
+
+      expect(result.content).toBe("# cached");
+      expect(s3.getObject).not.toHaveBeenCalled();
+    });
+
+    it("throws 404 when lesson does not exist", async () => {
+      query.mockResolvedValueOnce({ rows: [] });
+
+      await expect(service.getLessonRawContent("5", "10")).rejects.toMatchObject({ status: 404 });
     });
   });
 

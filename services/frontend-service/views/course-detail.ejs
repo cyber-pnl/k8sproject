@@ -26,6 +26,15 @@
 </section>
 
 <script>
+  function esc(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   (async function () {
     const slug = "<%= slug %>";
     const fetched = await Promise.all([
@@ -48,7 +57,7 @@
 
     var tags = (c.tags || "").split(",").filter(Boolean);
     document.getElementById("course-tags").innerHTML = tags.map(function (t) {
-      return '<span class="rounded bg-kube-card px-2 py-0.5 text-xs text-kube-muted">' + t.trim() + "</span>";
+      return '<span class="rounded bg-kube-card px-2 py-0.5 text-xs text-kube-muted">' + esc(t.trim()) + "</span>";
     }).join("");
 
     var loggedIn = !!<%= currentUser ? "true" : "false" %>;
@@ -82,10 +91,10 @@
 
     listContainer.innerHTML = detail.lessons.map(function (lesson) {
       return (
-        '<a href="/courses/' + slug + "/lessons/" + lesson.slug + '" class="flex items-center justify-between px-6 py-4 transition-colors hover:bg-kube-card/40">' +
+        '<a href="/courses/' + slug + "/lessons/" + esc(lesson.slug) + '" class="flex items-center justify-between px-6 py-4 transition-colors hover:bg-kube-card/40">' +
         '<div class="flex items-center gap-3">' +
-        '<span class="flex size-8 items-center justify-center rounded-lg bg-kube-primary/10 font-mono text-xs text-kube-primary">' + lesson.order_index + "</span>" +
-        "<div><p class='text-sm font-medium text-kube-heading'>" + lesson.title + "</p>" +
+        '<span class="flex size-8 items-center justify-center rounded-lg bg-kube-primary/10 font-mono text-xs text-kube-primary">' + (lesson.order_index || 0) + "</span>" +
+        "<div><p class='text-sm font-medium text-kube-heading'>" + esc(lesson.title) + "</p>" +
         '<p class="text-xs text-kube-muted">' + (lesson.duration_minutes || 0) + " min</p></div></div>" +
         '<svg class="size-4 text-kube-muted" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>' +
         "</a>"

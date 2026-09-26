@@ -80,6 +80,7 @@
 
       const btn = document.getElementById("complete-btn");
       btn.classList.remove("hidden");
+      const btnLabel = btn.textContent;
       function render() {
         btn.textContent = data.completed ? "Completed ✓" : "Mark as complete";
         btn.className = "shrink-0 rounded-lg px-4 py-2 text-sm transition-colors " +
@@ -90,12 +91,18 @@
       render();
 
       btn.addEventListener("click", async function () {
+        btn.disabled = true;
         const method = data.completed ? "DELETE" : "POST";
-        const r = await fetch("/api/progress/courses/" + data.course.id + "/lessons/" + data.lesson.id + "/complete", { method: method });
-        if (r.ok) {
+        try {
+          const r = await fetch("/api/progress/courses/" + data.course.id + "/lessons/" + data.lesson.id + "/complete", { method: method });
+          if (!r.ok) throw new Error("HTTP " + r.status);
           const body = await r.json();
           data.completed = body.completed;
           render();
+        } catch (err) {
+          alert("Failed to update progress: " + err.message);
+        } finally {
+          btn.disabled = false;
         }
       });
 

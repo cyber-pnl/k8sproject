@@ -94,8 +94,18 @@ async function getCourseBySlug(slug) {
   return { course: result.rows[0], lessons: lessons.rows };
 }
 
-async function getLessonContent(userId, slug, lessonSlug) {
+async function getLessonContent(userId, slug, lessonSlug, role = "user") {
   const { course } = await getCourseBySlug(slug);
+
+  if (String(role).toLowerCase() !== "admin") {
+    const enrollment = await query(
+      "SELECT 1 FROM enrollments WHERE user_id = $1 AND course_id = $2",
+      [parseInt(userId, 10), course.id]
+    );
+    if (!enrollment.rows.length) {
+      throw new HttpError(403, "Enroll in this course to access its lessons");
+    }
+  }
 
   const lessonResult = await query(
     "SELECT * FROM lessons WHERE course_id = $1 AND slug = $2",
@@ -264,6 +274,19 @@ async function updateLesson(courseId, lessonId, data) {
   return updated.rows[0];
 }
 
+async function getLessonRawContent(courseId, lessonId) {
+  const existing = await query(
+    "SELECT * FROM lessons WHERE id = $1 AND course_id = $2",
+    [lessonId, courseId]
+  );
+  if (!existing.rows[0]) throw new HttpError(404, "Lesson not found");
+
+  const key = existing.rows[0].s3_key || s3.lessonKey(parseInt(courseId, 10), parseInt(lessonId, 10));
+  const cached = await cacheGet(`content:${courseId}:${lessonId}`);
+  const content = cached != null ? cached : ((await s3.getObject(key)) || "");
+  return { content };
+}
+
 async function deleteLesson(courseId, lessonId) {
   await getCourseOr404(courseId);
 
@@ -368,6 +391,7 @@ module.exports = {
   listCourses,
   getCourseBySlug,
   getLessonContent,
+  getLessonRawContent,
   enroll,
   getProgress,
   setLessonCompleted,

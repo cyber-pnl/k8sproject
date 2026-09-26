@@ -8,6 +8,7 @@ jest.mock("../src/modules/courses/service", () => ({
   createLesson: jest.fn(),
   updateLesson: jest.fn(),
   deleteLesson: jest.fn(),
+  getLessonRawContent: jest.fn(),
   enroll: jest.fn(),
   getProgress: jest.fn(),
   setLessonCompleted: jest.fn(),
@@ -74,8 +75,30 @@ describe("courses routes", () => {
       .set("x-user-role", "user");
 
     expect(res.status).toBe(200);
-    expect(service.getLessonContent).toHaveBeenCalledWith("7", "k8s", "intro");
+    expect(service.getLessonContent).toHaveBeenCalledWith("7", "k8s", "intro", "user");
     expect(res.body.contentHtml).toBe("<p>hello</p>");
+  });
+
+  it("GET lesson raw content requires admin", async () => {
+    const res = await request(buildApp())
+      .get("/api/courses/1/lessons/2/content")
+      .set("x-user-id", "7")
+      .set("x-user-role", "user");
+
+    expect(res.status).toBe(403);
+  });
+
+  it("GET lesson raw content returns markdown for admin", async () => {
+    service.getLessonRawContent.mockResolvedValue({ content: "# RBAC" });
+
+    const res = await request(buildApp())
+      .get("/api/courses/1/lessons/2/content")
+      .set("x-user-id", "1")
+      .set("x-user-role", "admin");
+
+    expect(res.status).toBe(200);
+    expect(service.getLessonRawContent).toHaveBeenCalledWith("1", "2");
+    expect(res.body.content).toBe("# RBAC");
   });
 
   it("POST /api/courses requires admin", async () => {

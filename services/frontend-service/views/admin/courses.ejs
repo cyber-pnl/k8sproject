@@ -38,7 +38,62 @@
   </div>
 </section>
 
+<div id="lesson-editor" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
+  <div class="w-full max-w-2xl rounded-xl border border-kube-border bg-kube-surface p-6">
+    <div class="flex items-center justify-between">
+      <h3 class="text-base font-semibold text-kube-heading">Edit lesson</h3>
+      <button id="lesson-editor-close" type="button" class="rounded-lg border border-kube-border px-3 py-1 text-xs text-kube-muted hover:text-kube-heading">Close</button>
+    </div>
+    <div class="mt-4 flex flex-col gap-3">
+      <input id="editor-title" placeholder="Lesson title" class="rounded-lg border border-kube-border bg-kube-bg px-3 py-2 text-sm text-kube-heading" />
+      <input id="editor-duration" type="number" min="0" placeholder="Duration (min)" class="rounded-lg border border-kube-border bg-kube-bg px-3 py-2 text-sm text-kube-muted" />
+      <textarea id="editor-content" rows="12" placeholder="Lesson content (Markdown)" class="rounded-lg border border-kube-border bg-kube-bg px-3 py-2 font-mono text-xs text-kube-heading"></textarea>
+      <p id="editor-feedback" class="text-xs text-kube-accent"></p>
+      <div class="flex justify-end gap-2">
+        <button id="editor-save" class="rounded-lg bg-kube-primary px-4 py-2 text-sm font-medium text-kube-bg transition-colors hover:bg-kube-primary/90">Save lesson</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
+  function esc(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  var editorCtx = null;
+
+  function openEditor(courseId, lessonId) {
+    editorCtx = { courseId: courseId, lessonId: lessonId };
+    document.getElementById("editor-title").value = "";
+    document.getElementById("editor-duration").value = "0";
+    document.getElementById("editor-content").value = "Loading content...";
+    document.getElementById("editor-feedback").textContent = "";
+    document.getElementById("editor-feedback").classList.remove("text-red-400");
+    document.getElementById("lesson-editor").classList.remove("hidden");
+    document.getElementById("lesson-editor").classList.add("flex");
+    return api("/api/courses/" + courseId + "/lessons/" + lessonId + "/content")
+      .then(function (result) {
+        document.getElementById("editor-content").value = result.content || "";
+      })
+      .catch(function (err) {
+        document.getElementById("editor-content").value = "";
+        document.getElementById("editor-feedback").textContent = "Failed to load content: " + err.message;
+        document.getElementById("editor-feedback").classList.add("text-red-400");
+      });
+  }
+
+  function closeEditor() {
+    editorCtx = null;
+    var modal = document.getElementById("lesson-editor");
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+  }
   async function api(path, options) {
     const response = await fetch(path, options);
     const body = await response.json().catch(function () { return {}; });
@@ -65,9 +120,9 @@
 
     container.innerHTML = courses.map(function (c) {
       return (
-        '<div class="rounded-xl border border-kube-border bg-kube-surface p-6" data-course="' + c.id + '" data-slug="' + c.slug + '">' +
+        '<div class="rounded-xl border border-kube-border bg-kube-surface p-6" data-course="' + esc(c.id) + '" data-slug="' + esc(c.slug) + '">' +
         '<div class="flex items-center justify-between">' +
-        '<h3 class="text-base font-semibold text-kube-heading">' + c.title +
+        '<h3 class="text-base font-semibold text-kube-heading">' + esc(c.title) +
         ' <span class="ml-2 text-xs text-kube-muted">' + (Number(c.lesson_count) || 0) + ' lessons</span></h3>' +
         '<div class="flex gap-2">' +
         '<button data-action="toggle" class="rounded-lg border border-kube-border px-3 py-1.5 text-xs text-kube-muted hover:text-kube-heading">Edit</button>' +
@@ -75,15 +130,15 @@
         "</div></div>" +
 
         '<div data-course-fields hidden class="mt-4 flex flex-col gap-3 rounded-lg border border-kube-border bg-kube-bg/50 p-4">' +
-        '<input data-field="title" value="' + c.title + '" class="rounded-lg border border-kube-border bg-kube-bg px-3 py-2 text-sm text-kube-heading" />' +
-        '<input data-field="slug" value="' + (c.slug || "") + '" placeholder="slug" class="rounded-lg border border-kube-border bg-kube-bg px-3 py-2 text-sm text-kube-muted" />' +
+        '<input data-field="title" value="' + esc(c.title) + '" class="rounded-lg border border-kube-border bg-kube-bg px-3 py-2 text-sm text-kube-heading" />' +
+        '<input data-field="slug" value="' + esc(c.slug) + '" placeholder="slug" class="rounded-lg border border-kube-border bg-kube-bg px-3 py-2 text-sm text-kube-muted" />' +
         '<select data-field="level" class="rounded-lg border border-kube-border bg-kube-bg px-3 py-2 text-sm text-kube-heading">' +
         '<option ' + (c.level === "beginner" ? "selected" : "") + ' value="beginner">Beginner</option>' +
         '<option ' + (c.level === "intermediate" ? "selected" : "") + ' value="intermediate">Intermediate</option>' +
         '<option ' + (c.level === "advanced" ? "selected" : "") + ' value="advanced">Advanced</option>' +
         '<option ' + (c.level === "expert" ? "selected" : "") + ' value="expert">Expert</option></select>' +
-        '<textarea data-field="description" rows="2" class="rounded-lg border border-kube-border bg-kube-bg px-3 py-2 text-sm text-kube-heading">' + (c.description || "") + "</textarea>" +
-        '<input data-field="tags" value="' + (c.tags || "") + '" placeholder="tags" class="rounded-lg border border-kube-border bg-kube-bg px-3 py-2 text-sm text-kube-muted" />' +
+        '<textarea data-field="description" rows="2" class="rounded-lg border border-kube-border bg-kube-bg px-3 py-2 text-sm text-kube-heading">' + esc(c.description) + "</textarea>" +
+        '<input data-field="tags" value="' + esc(c.tags) + '" placeholder="tags" class="rounded-lg border border-kube-border bg-kube-bg px-3 py-2 text-sm text-kube-muted" />' +
         '<button data-action="save-course" class="rounded-lg bg-kube-primary px-4 py-2 text-sm font-medium text-kube-bg">Save course</button>' +
         "<h4 class='mt-2 text-sm font-semibold text-kube-heading'>Lessons</h4>" +
         '<div data-course-lessons class="flex flex-col gap-2"></div>' +
@@ -98,27 +153,30 @@
 
     // Load lessons for each course card (list endpoint is slug-based)
     courses.forEach(function (c) {
-      loadLessons(c.slug);
+      loadLessons(c.id);
     });
   }
 
-  async function loadLessons(slug) {
+  async function loadLessons(courseId) {
     try {
-      const data = await api("/api/courses/" + slug);
-      const target = document.querySelector('[data-course="' + courseId + '"] [data-course-lessons]');
-      if (!target) return;
+      const card = document.querySelector('[data-course="' + courseId + '"]');
+      if (!card) return;
+      const target = card.querySelector("[data-course-lessons]");
+      const data = await api("/api/courses/" + card.dataset.slug);
       const lessons = data.lessons || [];
+      window.__lessonsByCourse = window.__lessonsByCourse || {};
+      window.__lessonsByCourse[courseId] = lessons;
       target.innerHTML = lessons.length === 0
         ? '<p class="text-xs text-kube-muted">No lessons yet.</p>'
         : lessons.map(function (l) {
             return (
               '<div class="flex items-center justify-between rounded-lg border border-kube-border bg-kube-bg/50 px-3 py-2">' +
-              "<div><p class='text-sm font-medium text-kube-heading'>" + l.title + "</p>" +
-              "<p class='text-xs text-kube-muted'>" + l.order_index + " • " + (l.duration_minutes || 0) + " min</p></div>" +
+              "<div><p class='text-sm font-medium text-kube-heading'>" + esc(l.title) + "</p>" +
+              "<p class='text-xs text-kube-muted'>" + (l.order_index || 0) + " • " + (l.duration_minutes || 0) + " min</p></div>" +
               '<div class="flex gap-2">' +
-              '<button data-action="edit-lesson" data-lesson="' + l.id + '" data-slug="' + l.slug + '" data-title="' + l.title + '" data-duration="' + (l.duration_minutes || 0) + '" class="rounded-lg border border-kube-border px-3 py-1 text-xs text-kube-muted hover:text-kube-heading">Content</button>' +
-              '<button data-action="delete-lesson" data-lesson="' + l.id + '" class="rounded-lg border border-red-500/30 px-3 py-1 text-xs text-red-400 hover:bg-red-500/10">Delete</button>' +
-              '<button data-action="move-up" data-lesson="' + l.id + '" class="rounded-lg border border-kube-border px-3 py-1 text-xs text-kube-muted hover:text-kube-heading">↑</button>' +
+              '<button data-action="edit-lesson" data-lesson="' + esc(l.id) + '" data-slug="' + esc(l.slug) + '" data-title="' + esc(l.title) + '" data-duration="' + esc(l.duration_minutes || 0) + '" class="rounded-lg border border-kube-border px-3 py-1 text-xs text-kube-muted hover:text-kube-heading">Content</button>' +
+              '<button data-action="delete-lesson" data-lesson="' + esc(l.id) + '" class="rounded-lg border border-red-500/30 px-3 py-1 text-xs text-red-400 hover:bg-red-500/10">Delete</button>' +
+              '<button data-action="move-up" data-lesson="' + esc(l.id) + '" class="rounded-lg border border-kube-border px-3 py-1 text-xs text-kube-muted hover:text-kube-heading">↑</button>' +
               "</div></div>"
             );
           }).join("");
@@ -219,22 +277,10 @@
     }
 
     if (action === "edit-lesson") {
-      const title = prompt("Lesson title", btn.dataset.title || "");
-      if (title === null) return;
-      const duration = prompt("Duration (min)", btn.dataset.duration || "0");
-      const content = prompt("Lesson content (Markdown - multiline tolerated)", "Write markdown here...");
-      if (content === null) return;
-      const payload = { title: title, duration_minutes: parseInt(duration || "0", 10) };
-      if (content !== "") payload.content = content;
-      try {
-        await api("/api/courses/" + courseId + "/lessons/" + btn.dataset.lesson, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        loadLessons(courseId);
-        refreshList();
-      } catch (err) { alert(err.message); }
+      var lessonId = btn.dataset.lesson;
+      document.getElementById("editor-title").value = btn.dataset.title || "";
+      document.getElementById("editor-duration").value = btn.dataset.duration || "0";
+      openEditor(courseId, lessonId);
       return;
     }
 
@@ -249,9 +295,53 @@
     }
 
     if (action === "move-up") {
-      // Reorder is handled via order_index on save; keep simple: refresh
-      loadLessons(courseId);
+      var lessons = (window.__lessonsByCourse && window.__lessonsByCourse[courseId]) || [];
+      var idx = lessons.findIndex(function (l) { return Number(l.id) === Number(btn.dataset.lesson); });
+      if (idx <= 0) return;
+      var prev = lessons[idx - 1];
+      var curr = lessons[idx];
+      try {
+        await api("/api/courses/" + courseId + "/lessons/" + curr.id, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order_index: prev.order_index }),
+        });
+        await api("/api/courses/" + courseId + "/lessons/" + prev.id, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order_index: curr.order_index }),
+        });
+        loadLessons(courseId);
+      } catch (err) { alert(err.message); }
+      return;
     }
+  });
+
+  document.getElementById("lesson-editor-close").addEventListener("click", closeEditor);
+  document.getElementById("lesson-editor").addEventListener("click", function (event) {
+    if (event.target.id === "lesson-editor") closeEditor();
+  });
+  document.getElementById("editor-save").addEventListener("click", async function () {
+    if (!editorCtx) return;
+    var ctx = editorCtx;
+    var title = document.getElementById("editor-title").value;
+    if (!title) return alert("Lesson title required");
+    var content = document.getElementById("editor-content").value;
+    var payload = {
+      title: title,
+      duration_minutes: parseInt(document.getElementById("editor-duration").value || "0", 10),
+      content: content,
+    };
+    try {
+      await api("/api/courses/" + ctx.courseId + "/lessons/" + ctx.lessonId, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      closeEditor();
+      loadLessons(ctx.courseId);
+      refreshList();
+    } catch (err) { alert(err.message); }
   });
 
   refreshList();

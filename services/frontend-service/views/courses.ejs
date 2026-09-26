@@ -29,6 +29,15 @@
       expert: "bg-purple-500/10 text-purple-400",
     };
 
+    function esc(value) {
+      return String(value == null ? "" : value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
     function badge(level) {
       const cls = levelColors[level] || levelColors.beginner;
       return '<span class="rounded-full ' + cls + ' px-3 py-0.5 text-xs font-medium">' +
@@ -49,11 +58,11 @@
       grid.innerHTML = courses.map(function (c) {
         var tags = (c.tags || "").split(",").filter(Boolean).slice(0, 3);
         var tagHtml = tags.map(function (t) {
-          return '<span class="rounded bg-kube-card px-2 py-0.5 text-xs text-kube-muted">' + t.trim() + "</span>";
+          return '<span class="rounded bg-kube-card px-2 py-0.5 text-xs text-kube-muted">' + esc(t.trim()) + "</span>";
         }).join("");
 
         var enroll = loggedIn
-          ? '<form data-enroll data-course-id="' + c.id + '">' +
+          ? '<form data-enroll data-course-id="' + esc(c.id) + '">' +
             '<button type="submit" class="w-full rounded-lg bg-kube-primary px-4 py-2 text-sm font-medium text-kube-bg transition-colors hover:bg-kube-primary/90">Enroll</button>' +
             "</form>"
           : '<a href="/login" class="block rounded-lg border border-kube-border px-4 py-2 text-center text-sm text-kube-muted transition-colors hover:border-kube-primary/50 hover:text-kube-heading">Sign in to enroll</a>';
@@ -62,8 +71,8 @@
           '<div class="flex flex-col rounded-xl border border-kube-border bg-kube-surface p-5">' +
           '<div class="flex items-center justify-between">' + badge(c.level) +
           '<span class="text-xs text-kube-muted">' + (Number(c.lesson_count) || 0) + " lessons</span></div>" +
-          '<a href="/courses/' + c.slug + '"><h3 class="mt-3 text-sm font-semibold text-kube-heading hover:text-kube-primary">' + c.title + "</h3></a>" +
-          '<p class="mt-2 flex-1 text-sm text-kube-muted">' + (c.description || "") + "</p>" +
+          '<a href="/courses/' + esc(c.slug) + '"><h3 class="mt-3 text-sm font-semibold text-kube-heading hover:text-kube-primary">' + esc(c.title) + "</h3></a>" +
+          '<p class="mt-2 flex-1 text-sm text-kube-muted">' + esc(c.description) + "</p>" +
           '<div class="mt-3 flex flex-wrap gap-1.5">' + tagHtml + "</div>" +
           '<div class="mt-5">' + enroll + "</div></div>"
         );
