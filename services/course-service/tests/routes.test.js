@@ -10,6 +10,8 @@ jest.mock("../src/modules/courses/service", () => ({
   deleteLesson: jest.fn(),
   getLessonRawContent: jest.fn(),
   enroll: jest.fn(),
+  unenroll: jest.fn(),
+  getCourseProgress: jest.fn(),
   getProgress: jest.fn(),
   setLessonCompleted: jest.fn(),
 }));
@@ -35,12 +37,29 @@ describe("courses routes", () => {
     service.listCourses.mockResolvedValue({
       source: "database",
       data: [{ id: 1, title: "Kubernetes" }],
+      total: 1,
     });
 
     const res = await request(buildApp()).get("/api/courses");
 
     expect(res.status).toBe(200);
     expect(res.body.courses).toEqual([{ id: 1, title: "Kubernetes" }]);
+    expect(res.body.total).toBe(1);
+  });
+
+  it("GET /api/courses forwards query filters", async () => {
+    service.listCourses.mockResolvedValue({ source: "database", data: [], total: 0 });
+
+    await request(buildApp()).get("/api/courses?search=k8s&level=beginner&tags=a,b&sort=title&limit=10&offset=0");
+
+    expect(service.listCourses).toHaveBeenCalledWith({
+      search: "k8s",
+      level: "beginner",
+      tags: "a,b",
+      sort: "title",
+      limit: "10",
+      offset: "0",
+    });
   });
 
   it("GET /api/courses/:slug returns course detail (public)", async () => {
@@ -154,6 +173,41 @@ describe("courses routes", () => {
 
     expect(res.status).toBe(201);
     expect(service.enroll).toHaveBeenCalledWith("3", "5");
+  });
+
+  it("DELETE enroll requires auth and calls service", async () => {
+    const res = await request(buildApp()).delete("/api/progress/courses/5/enroll");
+    expect(res.status).toBe(401);
+  });
+
+  it("DELETE enroll unenrolls for authenticated user", async () => {
+    service.unenroll.mockResolvedValue({ success: true });
+
+    const res = await request(buildApp())
+      .delete("/api/progress/courses/5/enroll")
+      .set("x-user-id", "3")
+      .set("x-user-role", "user");
+
+    expect(res.status).toBe(200);
+    expect(service.unenroll).toHaveBeenCalledWith("3", "5");
+  });
+
+  it("GET course progress requires auth", async () => {
+    const res = await request(buildApp()).get("/api/progress/courses/5");
+    expect(res.status).toBe(401);
+  });
+
+  it("GET course progress returns enrolled details", async () => {
+    service.getCourseProgress.mockResolvedValue({ enrolled: true, completedLessonIds: [8, 9] });
+
+    const res = await request(buildApp())
+      .get("/api/progress/courses/5")
+      .set("x-user-id", "3")
+      .set("x-user-role", "user");
+
+    expect(res.status).toBe(200);
+    expect(service.getCourseProgress).toHaveBeenCalledWith("3", "5");
+    expect(res.body).toEqual({ enrolled: true, completedLessonIds: [8, 9] });
   });
 
   it("DELETE lesson completion behaves when authenticated", async () => {

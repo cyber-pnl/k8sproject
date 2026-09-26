@@ -47,30 +47,64 @@ describe("course service", () => {
 
       const result = await service.listCourses();
 
-      expect(result).toEqual({ source: "cache", data: cached });
+      expect(result).toEqual({ source: "cache", data: cached, total: 1 });
       expect(query).not.toHaveBeenCalled();
     });
 
     it("queries DB and caches the result when cache miss", async () => {
       client.get.mockResolvedValue(null);
       const rows = [{ id: 1, title: "K8s", lesson_count: "3" }];
-      query.mockResolvedValue({ rows });
+      query.mockResolvedValueOnce({ rows: [{ n: "1" }] }).mockResolvedValueOnce({ rows });
 
       const result = await service.listCourses();
 
-      expect(result).toEqual({ source: "database", data: rows });
+      expect(result).toEqual({ source: "database", data: rows, total: 1 });
       expect(client.setEx).toHaveBeenCalledWith("courses:all", 300, JSON.stringify(rows));
     });
 
     it("falls back to DB when Redis is not ready", async () => {
       redis.getClient.mockReturnValue(makeRedis(false));
       const rows = [{ id: 2, title: "Ingress" }];
-      query.mockResolvedValue({ rows });
+      query.mockResolvedValueOnce({ rows: [{ n: "1" }] }).mockResolvedValueOnce({ rows });
 
       const result = await service.listCourses();
 
       expect(result.source).toBe("database");
-      expect(query).toHaveBeenCalled();
+      expect(result.total).toBe(1);
+    });
+
+    it("applies search, level and tags filters without using cache", async () => {
+      client.get.mockResolvedValue(JSON.stringify([{ id: 999 }]));
+      query
+        .mockResolvedValueOnce({ rows: [{ n: "1" }] })
+        .mockResolvedValueOnce({ rows: [{ id: 2, title: "Advanced" }] });
+
+      const result = await service.listCourses({ search: "advanced", level: "advanced", tags: "sec,net" });
+
+      expect(client.get).not.toHaveBeenCalled();
+      expect(client.setEx).not.toHaveBeenCalled();
+      expect(result.source).toBe("database");
+      expect(result.data).toEqual([{ id: 2, title: "Advanced" }]);
+      expect(result.total).toBe(1);
+      const firstQuery = query.mock.calls[0];
+      expect(firstQuery[0]).toMatch(/COUNT\(\*\)/);
+      expect(firstQuery[0]).toMatch(/c\.title ILIKE \$1/);
+      expect(firstQuery[1]).toEqual(["%advanced%", "advanced", "%sec%", "%net%"]);
+    });
+
+    it("supports sort and pagination", async () => {
+      query
+        .mockResolvedValueOnce({ rows: [{ n: "5" }] })
+        .mockResolvedValueOnce({ rows: [{ id: 1 }, { id: 2 }] });
+
+      const result = await service.listCourses({ sort: "title", limit: 2, offset: 4 });
+
+      const dataQuery = query.mock.calls[1][0];
+      expect(dataQuery).toMatch(/ORDER BY c\.title ASC/);
+      expect(dataQuery).toMatch(/LIMIT \$1/);
+      expect(dataQuery).toMatch(/OFFSET \$2/);
+      expect(query.mock.calls[1][1]).toEqual([2, 4]);
+      expect(result.data).toHaveLength(2);
     });
   });
 
@@ -367,6 +401,46 @@ describe("course service", () => {
 
       expect(query).toHaveBeenLastCalledWith("DELETE FROM lesson_progress WHERE user_id = $1 AND lesson_id = $2", [7, 10]);
       expect(result).toEqual({ success: true, completed: false });
+    });
+
+    it("unenrolls a user and clears lesson progress", async () => {
+      query
+        .mockResolvedValueOnce({ rows: [{ id: 2 }] }) // course exists
+        .mockResolvedValueOnce({ rows: [] }) // delete enrollment
+        .mockResolvedValueOnce({ rows: [] }); // delete lesson_progress
+
+      const result = await service.unenroll("7", 2);
+
+      expect(result).toEqual({ success: true });
+      expect(query.mock.calls[1][0]).toMatch(/DELETE FROM enrollments/);
+      expect(query.mock.calls[2][0]).toMatch(/DELETE FROM lesson_progress/);
+    });
+
+    it("returns enrolled=true with completed lesson ids", async () => {
+      query
+        .mockResolvedValueOnce({ rows: [{ id: 2 }] }) // course exists
+        .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // enrollment found
+        .mockResolvedValueOnce({ rows: [{ lesson_id: 10 }, { lesson_id: 11 }] });
+
+      const result = await service.getCourseProgress("7", 2);
+
+      expect(result).toEqual({ enrolled: true, completedLessonIds: [10, 11] });
+    });
+
+    it("returns enrolled=false when not enrolled", async () => {
+      query
+        .mockResolvedValueOnce({ rows: [{ id: 2 }] }) // course exists
+        .mockResolvedValueOnce({ rows: [] }); // no enrollment
+
+      const result = await service.getCourseProgress("7", 2);
+
+      expect(result).toEqual({ enrolled: false, completedLessonIds: [] });
+    });
+
+    it("getCourseProgress throws 404 when course missing", async () => {
+      query.mockResolvedValueOnce({ rows: [] });
+
+      await expect(service.getCourseProgress("7", 999)).rejects.toMatchObject({ status: 404 });
     });
   });
 });

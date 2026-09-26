@@ -2,6 +2,7 @@ const express = require("express");
 const { initDatabase } = require("./src/shared/database");
 const { initRedis, isReady: redisReady } = require("./src/shared/redis");
 const s3 = require("./src/shared/s3");
+const { seedDemoContent } = require("./src/shared/seed");
 const coursesRoutes = require("./src/modules/courses/routes");
 
 const app = express();
@@ -31,6 +32,9 @@ async function startServer() {
     await initRedis();
     if (!redisReady()) console.warn("[WARN] Redis not ready, caching disabled");
     if (!s3.enabled) console.warn("[WARN] S3 not configured (s3-secret manquant) : contenu des leçons indisponible");
+
+    // Contenu de démonstration idempotent (uniquement si aucune table cours)
+    await seedDemoContent();
 
     const port = process.env.PORT || 3004;
     app.listen(port, () => {

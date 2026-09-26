@@ -67,19 +67,78 @@ async function getCourseOr404(courseId) {
 
 // ── Accès public ───────────────────────────────────────────────
 
-async function listCourses() {
-  const cached = await cacheGet("courses:all");
-  if (cached) return { source: "cache", data: cached };
+const SORTS = {
+  newest: "c.created_at DESC",
+  title: "c.title ASC",
+  level: "c.level ASC",
+  lessons: "lesson_count DESC",
+};
 
-  const result = await query(`
-    SELECT c.id, c.title, c.slug, c.level, c.description, c.tags, c.created_at,
+async function listCourses(filters = {}) {
+  const search = String(filters.search || "").trim();
+  const level = String(filters.level || "").trim().toLowerCase();
+  const rawTags = String(filters.tags || "").trim();
+  const sort = SORTS[filters.sort] ? filters.sort : "newest";
+  const parsedLimit = parseInt(filters.limit, 10);
+  const parsedOffset = parseInt(filters.offset, 10);
+  const useLimit = Number.isFinite(parsedLimit) && parsedLimit > 0;
+  const useOffset = Number.isFinite(parsedOffset) && parsedOffset >= 0;
+
+  const hasFilters = Boolean(search || level || rawTags || sort !== "newest" || useLimit || useOffset);
+
+  if (!hasFilters) {
+    const cached = await cacheGet("courses:all");
+    if (cached) return { source: "cache", data: cached, total: cached.length };
+  }
+
+  const conditions = [];
+  const params = [];
+  if (search) {
+    params.push(`%${search}%`);
+    conditions.push(`(c.title ILIKE $${params.length} OR c.description ILIKE $${params.length})`);
+  }
+  if (level) {
+    params.push(level);
+    conditions.push(`c.level = $${params.length}`);
+  }
+  if (rawTags) {
+    rawTags
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean)
+      .forEach((t) => {
+        params.push(`%${t}%`);
+        conditions.push(`c.tags ILIKE $${params.length}`);
+      });
+  }
+  const whereClause = conditions.length ? ` WHERE ${conditions.join(" AND ")}` : "";
+
+  const totalResult = await query(`SELECT COUNT(*) AS n FROM courses c${whereClause}`, params);
+  const total = Number(totalResult.rows[0].n || 0);
+
+  const dataParams = [...params];
+  let pageClause = "";
+  if (useLimit) {
+    dataParams.push(parsedLimit);
+    pageClause += ` LIMIT $${dataParams.length}`;
+  }
+  if (useOffset) {
+    dataParams.push(parsedOffset);
+    pageClause += ` OFFSET $${dataParams.length}`;
+  }
+
+  const result = await query(
+    `SELECT c.id, c.title, c.slug, c.level, c.description, c.tags, c.created_at,
       (SELECT COUNT(*) FROM lessons l WHERE l.course_id = c.id) AS lesson_count
     FROM courses c
-    ORDER BY c.created_at DESC
-  `);
+    ${whereClause}
+    ORDER BY ${SORTS[sort]}
+    ${pageClause}`,
+    dataParams
+  );
 
-  await cacheSet("courses:all", 300, result.rows);
-  return { source: "database", data: result.rows };
+  if (!hasFilters) await cacheSet("courses:all", 300, result.rows);
+  return { source: "database", data: result.rows, total };
 }
 
 async function getCourseBySlug(slug) {
@@ -320,6 +379,44 @@ async function enroll(userId, courseId) {
   return { success: true };
 }
 
+async function unenroll(userId, courseId) {
+  await getCourseOr404(courseId);
+  await query(
+    "DELETE FROM enrollments WHERE user_id = $1 AND course_id = $2",
+    [parseInt(userId, 10), parseInt(courseId, 10)]
+  );
+  await query(
+    `DELETE FROM lesson_progress WHERE user_id = $1
+      AND lesson_id IN (SELECT id FROM lessons WHERE course_id = $2)`,
+    [parseInt(userId, 10), parseInt(courseId, 10)]
+  );
+  return { success: true };
+}
+
+async function getCourseProgress(userId, courseId) {
+  await getCourseOr404(courseId);
+
+  const enrollment = await query(
+    "SELECT 1 FROM enrollments WHERE user_id = $1 AND course_id = $2",
+    [parseInt(userId, 10), parseInt(courseId, 10)]
+  );
+  if (!enrollment.rows.length) {
+    return { enrolled: false, completedLessonIds: [] };
+  }
+
+  const completed = await query(
+    `SELECT lesson_id FROM lesson_progress
+     WHERE user_id = $1
+       AND lesson_id IN (SELECT id FROM lessons WHERE course_id = $2)`,
+    [parseInt(userId, 10), parseInt(courseId, 10)]
+  );
+
+  return {
+    enrolled: true,
+    completedLessonIds: completed.rows.map((row) => Number(row.lesson_id)),
+  };
+}
+
 async function getProgress(userId) {
   const result = await query(
     `
@@ -393,6 +490,8 @@ module.exports = {
   getLessonContent,
   getLessonRawContent,
   enroll,
+  unenroll,
+  getCourseProgress,
   getProgress,
   setLessonCompleted,
 };

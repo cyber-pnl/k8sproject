@@ -61,11 +61,29 @@
     }).join("");
 
     var loggedIn = !!<%= currentUser ? "true" : "false" %>;
-    var enrollUrl = "/api/progress/courses/" + c.id + "/enroll";
-    document.getElementById("course-actions").innerHTML = loggedIn
-      ? '<button id="enroll-btn" data-course-id="' + c.id + '" class="rounded-lg bg-kube-primary px-4 py-2 text-sm font-medium text-kube-bg transition-colors hover:bg-kube-primary/90">Enroll in this course</button>'
-      : '<a href="/login" class="rounded-lg border border-kube-border px-4 py-2 text-sm text-kube-muted transition-colors hover:border-kube-primary/50 hover:text-kube-heading">Sign in to enroll</a>';
+    var progress = null;
+    if (loggedIn) {
+      try {
+        var pr = await fetch("/api/progress/courses/" + c.id);
+        if (pr.ok) progress = await pr.json();
+      } catch (e) { /* progress indisponible */ }
+    }
+    var enrolled = !!(progress && progress.enrolled);
+    var completedIds = new Set(((progress && progress.completedLessonIds) || []).map(String));
 
+    var actionsHtml;
+    if (!loggedIn) {
+      actionsHtml = '<a href="/login" class="rounded-lg border border-kube-border px-4 py-2 text-sm text-kube-muted transition-colors hover:border-kube-primary/50 hover:text-kube-heading">Sign in to enroll</a>';
+    } else if (enrolled) {
+      actionsHtml = '<div class="flex flex-wrap items-center gap-3">' +
+        '<span class="rounded-lg border border-kube-accent/40 bg-kube-accent/15 px-4 py-2 text-sm font-medium text-kube-accent">Enrolled ✓</span>' +
+        '<button id="unenroll-btn" class="rounded-lg border border-red-500/30 px-4 py-2 text-sm text-red-400 transition-colors hover:bg-red-500/10">Unenroll</button></div>';
+    } else {
+      actionsHtml = '<button id="enroll-btn" data-course-id="' + esc(c.id) + '" class="rounded-lg bg-kube-primary px-4 py-2 text-sm font-medium text-kube-bg transition-colors hover:bg-kube-primary/90">Enroll in this course</button>';
+    }
+    document.getElementById("course-actions").innerHTML = actionsHtml;
+
+    var enrollUrl = "/api/progress/courses/" + c.id + "/enroll";
     var enrollBtn = document.getElementById("enroll-btn");
     if (enrollBtn) {
       enrollBtn.addEventListener("click", async function () {
@@ -82,6 +100,18 @@
         }
       });
     }
+    var unenrollBtn = document.getElementById("unenroll-btn");
+    if (unenrollBtn) {
+      unenrollBtn.addEventListener("click", async function () {
+        try {
+          var r = await fetch(enrollUrl, { method: "DELETE" });
+          if (r.ok) location.reload();
+          else alert("Failed to unenroll");
+        } catch (e) {
+          alert("Failed to unenroll");
+        }
+      });
+    }
 
     var listContainer = document.getElementById("lessons-list");
     if (!detail.lessons || detail.lessons.length === 0) {
@@ -90,13 +120,14 @@
     }
 
     listContainer.innerHTML = detail.lessons.map(function (lesson) {
+      var done = completedIds.has(String(lesson.id));
       return (
         '<a href="/courses/' + slug + "/lessons/" + esc(lesson.slug) + '" class="flex items-center justify-between px-6 py-4 transition-colors hover:bg-kube-card/40">' +
         '<div class="flex items-center gap-3">' +
-        '<span class="flex size-8 items-center justify-center rounded-lg bg-kube-primary/10 font-mono text-xs text-kube-primary">' + (lesson.order_index || 0) + "</span>" +
+        '<span class="flex size-8 items-center justify-center rounded-lg font-mono text-xs ' + (done ? "bg-kube-accent/20 text-kube-accent" : "bg-kube-primary/10 text-kube-primary") + '">' + (done ? "✓" : (lesson.order_index || 0)) + "</span>" +
         "<div><p class='text-sm font-medium text-kube-heading'>" + esc(lesson.title) + "</p>" +
         '<p class="text-xs text-kube-muted">' + (lesson.duration_minutes || 0) + " min</p></div></div>" +
-        '<svg class="size-4 text-kube-muted" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>' +
+        (done ? '<span class="text-xs font-medium text-kube-accent">Completed</span>' : '<svg class="size-4 text-kube-muted" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>') +
         "</a>"
       );
     }).join("");

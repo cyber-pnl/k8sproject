@@ -15,8 +15,9 @@ function handleError(res, err) {
 // ── Accès public ───────────────────────────────────────────────
 router.get("/api/courses", async (req, res) => {
   try {
-    const result = await service.listCourses();
-    res.json({ courses: result.data, source: result.source });
+    const { search, level, tags, sort, limit, offset } = req.query;
+    const result = await service.listCourses({ search, level, tags, sort, limit, offset });
+    res.json({ courses: result.data, total: result.total, source: result.source });
   } catch (err) {
     handleError(res, err);
   }
@@ -111,6 +112,25 @@ router.post("/api/progress/courses/:courseId/enroll", isAuthenticated, async (re
   try {
     const result = await service.enroll(req.user.id, req.params.courseId);
     res.status(201).json(result);
+  } catch (err) {
+    handleError(res, err);
+  }
+});
+
+router.delete("/api/progress/courses/:courseId/enroll", isAuthenticated, async (req, res) => {
+  try {
+    const result = await service.unenroll(req.user.id, req.params.courseId);
+    res.json(result);
+  } catch (err) {
+    handleError(res, err);
+  }
+});
+
+// Détail de progression d'un cours (leçons complétées)
+router.get("/api/progress/courses/:courseId", isAuthenticated, async (req, res) => {
+  try {
+    const result = await service.getCourseProgress(req.user.id, req.params.courseId);
+    res.json(result);
   } catch (err) {
     handleError(res, err);
   }

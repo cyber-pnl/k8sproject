@@ -55,17 +55,39 @@
       }
 
       const loggedIn = !!<%= currentUser ? "true" : "false" %>;
+
+      const enrolledMap = {};
+      if (loggedIn) {
+        try {
+          const pRes = await fetch("/api/progress");
+          if (pRes.ok) {
+            const pData = (await pRes.json()).data || [];
+            pData.forEach(function (p) { enrolledMap[String(p.courseId)] = p; });
+          }
+        } catch (e) { /* progression indisponible */ }
+      }
+
       grid.innerHTML = courses.map(function (c) {
         var tags = (c.tags || "").split(",").filter(Boolean).slice(0, 3);
         var tagHtml = tags.map(function (t) {
           return '<span class="rounded bg-kube-card px-2 py-0.5 text-xs text-kube-muted">' + esc(t.trim()) + "</span>";
         }).join("");
 
-        var enroll = loggedIn
-          ? '<form data-enroll data-course-id="' + esc(c.id) + '">' +
+        const prog = enrolledMap[String(c.id)];
+        var enroll;
+        if (!loggedIn) {
+          enroll = '<a href="/login" class="block rounded-lg border border-kube-border px-4 py-2 text-center text-sm text-kube-muted transition-colors hover:border-kube-primary/50 hover:text-kube-heading">Sign in to enroll</a>';
+        } else if (prog) {
+          const pct = Math.round((prog.completedLessons / prog.totalLessons) * 100);
+          enroll = '<div class="flex items-center justify-between gap-2">' +
+            '<span class="text-xs font-medium text-kube-accent">' + pct + "% · " + prog.completedLessons + "/" + prog.totalLessons + "</span>" +
+            '<a href="/courses/' + esc(c.slug) + '" class="rounded-lg bg-kube-primary px-4 py-2 text-sm font-medium text-kube-bg transition-colors hover:bg-kube-primary/90">Continue →</a></div>' +
+            '<div class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-kube-primary/10"><div class="h-full rounded-full bg-kube-accent" style="width:' + pct + '%"></div></div>';
+        } else {
+          enroll = '<form data-enroll data-course-id="' + esc(c.id) + '">' +
             '<button type="submit" class="w-full rounded-lg bg-kube-primary px-4 py-2 text-sm font-medium text-kube-bg transition-colors hover:bg-kube-primary/90">Enroll</button>' +
-            "</form>"
-          : '<a href="/login" class="block rounded-lg border border-kube-border px-4 py-2 text-center text-sm text-kube-muted transition-colors hover:border-kube-primary/50 hover:text-kube-heading">Sign in to enroll</a>';
+            "</form>";
+        }
 
         return (
           '<div class="flex flex-col rounded-xl border border-kube-border bg-kube-surface p-5">' +
