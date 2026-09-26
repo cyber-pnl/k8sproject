@@ -1,0 +1,13 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: kubelearn-app-tls
+  namespace: default
+spec:
+  secretName: kubelearn-app-tls
+  commonName: kubelearn.duckdns.org
+  dnsNames:
+    - kubelearn.duckdns.org
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer

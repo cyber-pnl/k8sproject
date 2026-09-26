@@ -1,0 +1,93 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: kubelearn-routes
+  namespace: default
+spec:
+  parentRefs:
+    - name: kubelearn-gateway
+  hostnames:
+    - kubelearn.duckdns.org
+  rules:
+    # Cours : catalogue + progression → course-service
+    - name: course-api
+      matches:
+        - path:
+            type: Prefix
+            value: /api/courses
+        - path:
+            type: Prefix
+            value: /api/progress
+      backendRefs:
+        - name: course-service
+          port: 3004
+      filters:
+        - type: ExtensionRef
+          extensionRef:
+            group: traefik.io
+            kind: Middleware
+            name: forward-auth
+
+    # API métier (users, ...) → user-service
+    - name: user-api
+      matches:
+        - path:
+            type: Prefix
+            value: /api
+      backendRefs:
+        - name: user-service
+          port: 3002
+      filters:
+        - type: ExtensionRef
+          extensionRef:
+            group: traefik.io
+            kind: Middleware
+            name: forward-auth
+
+    # Soumission des formulaires → auth-service (qui gère les sessions)
+    - name: login-submit
+      matches:
+        - method: POST
+          path:
+            type: Prefix
+            value: /login
+      backendRefs:
+        - name: auth-service
+          port: 3001
+
+    - name: signup-submit
+      matches:
+        - method: POST
+          path:
+            type: Prefix
+            value: /signup
+      backendRefs:
+        - name: auth-service
+          port: 3001
+
+    # Déconnexion → auth-service
+    - name: logout
+      matches:
+        - method: GET
+          path:
+            type: Exact
+            value: /logout
+      backendRefs:
+        - name: auth-service
+          port: 3001
+
+    # Tout le reste (pages EJS, /login GET, /signup GET, statiques) → frontend
+    - name: frontend
+      matches:
+        - path:
+            type: Prefix
+            value: /
+      backendRefs:
+        - name: frontend-service
+          port: 3003
+      filters:
+        - type: ExtensionRef
+          extensionRef:
+            group: traefik.io
+            kind: Middleware
+            name: forward-auth

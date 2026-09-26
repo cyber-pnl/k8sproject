@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - feat/k8s-gateway
   workflow_dispatch:
 
 env:
@@ -26,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [auth-service, user-service, gateway-service, course-service]
+        service: [auth-service, user-service, course-service]
     steps:
       - uses: actions/checkout@v4
 
@@ -50,7 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [auth-service, user-service, gateway-service, course-service]
+        service: [auth-service, user-service, course-service]
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
@@ -100,7 +101,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [auth-service, user-service, gateway-service, course-service]
+        service: [auth-service, user-service, course-service]
     steps:
       - uses: actions/checkout@v4
 
@@ -125,7 +126,7 @@ jobs:
     strategy:
       matrix:
         # Ta liste complète de services
-        service: [auth-service, frontend-service, gateway-service, user-service, course-service]
+        service: [auth-service, frontend-service, user-service, course-service]
     steps:
       - uses: actions/checkout@v4
 
@@ -166,7 +167,6 @@ jobs:
           # On remplace l'image existante par celle avec le nouveau SHA du commit
           sed -i "s|image: ${IMAGE_BASE}/auth-service:.*|image: ${IMAGE_BASE}/auth-service:${{ github.sha }}|g" k8s/auth-deployment.yaml
           sed -i "s|image: ${IMAGE_BASE}/frontend-service:.*|image: ${IMAGE_BASE}/frontend-service:${{ github.sha }}|g" k8s/frontend-deployment.yaml
-          sed -i "s|image: ${IMAGE_BASE}/gateway-service:.*|image: ${IMAGE_BASE}/gateway-service:${{ github.sha }}|g" k8s/gateway-deployment.yaml
           sed -i "s|image: ${IMAGE_BASE}/user-service:.*|image: ${IMAGE_BASE}/user-service:${{ github.sha }}|g" k8s/user-deployment.yaml
           sed -i "s|image: ${IMAGE_BASE}/course-service:.*|image: ${IMAGE_BASE}/course-service:${{ github.sha }}|g" k8s/course-deployment.yaml
 

@@ -1,0 +1,14 @@
+# Active le provider Kubernetes Gateway API sur Traefik (k3s).
+# Ce fichier N'EST PAS dans k8s/ : il est appliqué à la main sur le nœud
+# (kubectl apply -f cluster/traefik-gateway.yaml), hors d'ArgoCD,
+# car ArgoCD ne synchronise que le dossier k8s/ dans le namespace default.
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    providers:
+      kubernetesGateway:
+        enabled: true

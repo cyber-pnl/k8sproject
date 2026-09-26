@@ -12,7 +12,4 @@ module.exports = {
   coverageDirectory: './coverage',
   collectCoverage: true,
   coverageReporters: ['text', 'lcov', 'clover'],
-  moduleNameMapper: {
-    '^redis$': '<rootDir>/../node_modules/redis'
-  }
 };

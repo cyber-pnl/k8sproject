@@ -1,0 +1,15 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: forward-auth
+  namespace: default
+spec:
+  forwardAuth:
+    address: http://auth-service:3001/auth/session
+    trustForwardHeader: true
+    # Copies ces en-têtes de la réponse ForwardAuth vers la requête aval
+    # (le frontend et les services /api* lisent toujours x-user-*)
+    authResponseHeaders:
+      - X-User-Id
+      - X-User-Name
+      - X-User-Role
