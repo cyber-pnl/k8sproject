@@ -110,6 +110,59 @@ describe('Session Routes', () => {
     });
   });
 
+  describe('Root aliases (frontend forms via API Gateway)', () => {
+    it('POST /login creates a session and redirects to /dashboard', async () => {
+      authController.findUserByUsername.mockResolvedValueOnce({ id: 10, username: 'dave', password: 'hash', role: 'user' });
+      authController.verifyPassword.mockResolvedValueOnce(true);
+
+      const res = await request(app)
+        .post('/login')
+        .send({ username: 'dave', password: 'pw12345' })
+        .expect(302);
+
+      expect(res.headers.location).toBe('/dashboard');
+
+      const session = await request(app)
+        .get('/auth/session')
+        .set('Cookie', res.headers['set-cookie'][0].split(';')[0])
+        .expect(200);
+
+      expect(session.body.authenticated).toBe(true);
+      expect(session.headers['x-user-name']).toBe('dave');
+    });
+
+    it('POST /signup creates the user and a session', async () => {
+      authController.findUserByUsername.mockResolvedValueOnce(null);
+      authController.createUser.mockResolvedValueOnce({ id: 11, username: 'eve', role: 'user' });
+
+      const res = await request(app)
+        .post('/signup')
+        .send({ username: 'eve', password: 'password123', confirmPassword: 'password123' })
+        .expect(302);
+
+      expect(res.headers.location).toBe('/dashboard');
+      expect(authController.createUser).toHaveBeenCalledWith('eve', 'password123', 'user');
+    });
+
+    it('GET /logout destroys the session and redirects to /', async () => {
+      const cookie = await loginAs(app, 12, 'frank', 'user');
+
+      const logout = await request(app)
+        .get('/logout')
+        .set('Cookie', cookie)
+        .expect(302);
+
+      expect(logout.headers.location).toBe('/');
+
+      const after = await request(app)
+        .get('/auth/session')
+        .set('Cookie', cookie)
+        .expect(200);
+
+      expect(after.body.authenticated).toBe(false);
+    });
+  });
+
   describe('GET /auth/logout', () => {
     it('destroys the session and redirects to /', async () => {
       const cookie = await loginAs(app, 4, 'carol', 'user');

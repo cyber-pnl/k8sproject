@@ -5,6 +5,10 @@
  *   POST /auth/signup   → crée l'utilisateur, crée la session, Set-Cookie, redirige vers /dashboard
  *   GET  /auth/logout   → détruit la session, redirige vers /
  *   GET  /auth/session  → cible ForwardAuth de Traefik : renvoie les en-têtes X-User-* si session valide
+ *
+ * Les formulaires du frontend postent vers /login, /signup et /logout (ETTO routes
+ * de l'API Gateway Kubernetes vers ce service, chemin préservé). Des alias à la
+ * racine (/login, /signup, /logout) sont donc déclarés en plus des routes /auth/*.
  */
 
 const express = require("express");
@@ -14,7 +18,7 @@ const authController = require("../auth/controller");
 const jsonParser = express.json();
 const urlEncodedParser = express.urlencoded({ extended: true });
 
-router.post("/auth/login", jsonParser, urlEncodedParser, async (req, res) => {
+async function handleLogin(req, res) {
   const { username, password } = req.body;
 
   if (!username || !password) {
@@ -45,9 +49,9 @@ router.post("/auth/login", jsonParser, urlEncodedParser, async (req, res) => {
     console.error("Login error:", err);
     return res.redirect("/login?error=1");
   }
-});
+}
 
-router.post("/auth/signup", jsonParser, urlEncodedParser, async (req, res) => {
+async function handleSignup(req, res) {
   const { username, password, confirmPassword } = req.body;
 
   if (!username || !password || !confirmPassword) return res.redirect("/signup?error=1");
@@ -74,16 +78,16 @@ router.post("/auth/signup", jsonParser, urlEncodedParser, async (req, res) => {
     console.error("Signup error:", err);
     return res.redirect("/signup?error=1");
   }
-});
+}
 
-router.get("/auth/logout", (req, res) => {
+function handleLogout(req, res) {
   if (req.session) {
     return req.session.destroy(() => res.redirect("/"));
   }
   return res.redirect("/");
-});
+}
 
-router.get("/auth/session", (req, res) => {
+function handleSession(req, res) {
   if (req.session && req.session.user) {
     res.set("X-User-Id", String(req.session.user.id));
     res.set("X-User-Name", String(req.session.user.username));
@@ -91,6 +95,18 @@ router.get("/auth/session", (req, res) => {
     return res.status(200).json({ authenticated: true });
   }
   return res.status(200).json({ authenticated: false });
-});
+}
+
+// Routes internes (ForwardAuth de Traefik + appels internes)
+router.post("/auth/login", jsonParser, urlEncodedParser, handleLogin);
+router.post("/auth/signup", jsonParser, urlEncodedParser, handleSignup);
+router.get("/auth/logout", handleLogout);
+router.get("/auth/session", handleSession);
+
+// Alias racine : ce que les formulaires du frontend postent réellement,
+// routés par l'API Gateway (traefik) vers ce service avec le chemin préservé.
+router.post("/login", jsonParser, urlEncodedParser, handleLogin);
+router.post("/signup", jsonParser, urlEncodedParser, handleSignup);
+router.get("/logout", handleLogout);
 
 module.exports = router;
