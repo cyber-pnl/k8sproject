@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: frontend-service
-          image: ghcr.io/cyber-pnl/k8sproject/frontend-service:44161076c3a12ad20cdc5ee1887adadd1105b437
+          image: ghcr.io/cyber-pnl/k8sproject/frontend-service:a548ebf9845a3c9b368486b9ed3a4ad9594df40a
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3003
