@@ -5,7 +5,9 @@ metadata:
   namespace: default
 spec:
   forwardAuth:
-    address: http://auth-service:3001/auth/session
+    # Utilise le FQDN : le pod traefik (ns kube-system) ne résout pas le nom court
+    # vers le namespace default (ses search domains commencent par kube-system.svc...).
+    address: http://auth-service.default.svc.cluster.local:3001/auth/session
     trustForwardHeader: true
     # Copies ces en-têtes de la réponse ForwardAuth vers la requête aval
     # (le frontend et les services /api* lisent toujours x-user-*)
