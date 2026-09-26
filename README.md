@@ -46,12 +46,13 @@ L'architecture comprend un API Gateway comme point d'entrée unique et plusieurs
 
 | Service | Port | Description |
 |---------|------|-------------|
-| Gateway Service | 3000 | Point d'entrée, routage, gestion de session centralisée |
-| Frontend Service | 3003 | Rendu des vues EJS (pages HTML) |
-| Auth Service | 3001 | Authentification (login, signup, logout), vérification utilisateurs |
+| Auth Service | 3001 | Authentification (login, signup, logout), sessions Redis, cible ForwardAuth |
+| Frontend Service | 3003 | Rendu des vues EJS (pages HTML), lit les en-têtes `x-user-*` |
 | User Service | 3002 | API de gestion des utilisateurs |
+| Course Service | 3004 | Catalogue de cours (S3/Markdown) + progression |
 | PostgreSQL | 5432 | Base de données relationnelle |
 | Redis | 6379 | Stockage des sessions et cache |
+| API Gateway K8s | 80/443 | Remplaçait le gateway-service : Kubernetes Gateway API (Traefik), routing + ForwardAuth |
 
 ---
 
@@ -62,29 +63,33 @@ L'architecture comprend un API Gateway comme point d'entrée unique et plusieurs
 │   └── CI.yml                    # Pipeline CI/CD complète
 │
 ├── services/                     # Code source des microservices
-│   ├── gateway-service/         # Service Gateway (port 3000)
 │   ├── frontend-service/        # Service Frontend (port 3003)
-│   ├── auth-service/            # Service Authentification (port 3001)
-│   └── user-service/            # Service Utilisateurs (port 3002)
+│   ├── auth-service/            # Service Authentification (port 3001) — sessions
+│   ├── user-service/            # Service Utilisateurs (port 3002)
+│   └── course-service/          # Service Cours (port 3004)
 │
-├── k8s/                          # Manifests Kubernetes
+├── k8s/                          # Manifests Kubernetes (GitOps via ArgoCD)
 │   ├── auth-deployment.yaml     # Déploiement Auth Service
 │   ├── auth-service.yaml        # Service Auth
 │   ├── frontend-deployment.yaml # Déploiement Frontend
 │   ├── frontend-service.yaml    # Service Frontend
-│   ├── gateway-deployment.yaml  # Déploiement Gateway
-│   ├── gateway-service.yaml     # Service Gateway (LoadBalancer)
 │   ├── user-deployment.yaml     # Déploiement User Service
 │   ├── user-service.yaml        # Service User
+│   ├── course-deployment.yaml   # Déploiement Course Service
+│   ├── course-service.yaml      # Service Course
+│   ├── network-gateway.yaml     # Gateway (Kubernetes Gateway API / Traefik)
+│   ├── http-routes.yaml         # HTTPRoute de routage + ForwardAuth
+│   ├── middleware-forward-auth.yaml # ForwardAuth (injection x-user-*)
+│   ├── certificate.yaml         # Certificat TLS (cert-manager)
 │   ├── postgres-*.yaml          # PostgreSQL (StatefulSet + ConfigMap)
 │   ├── redis-*.yaml             # Redis (Deployment + Service)
 │   └── scan-node-app-cronjob.yaml # Scan sécurité Trivy
 │
-├── infra/                        # Infrastructure K8s
+├── infra/                        # Infrastructure K8s (appliquée à la main)
 │   ├── install-argocd.yaml      # Configuration ArgoCD
-│   ├── traefik.yaml             # Ingress Controller
 │   ├── cert-manager.yaml        # Gestionnaire de certificats TLS
-│   └── cluster-issuer.yaml      # Émetteur de certificats Let's Encrypt
+│   ├── cluster-issuer.yaml      # Émetteur de certificats Let's Encrypt
+│   └── traefik-gateway.yaml     # HelmChartConfig Traefik (provider kubernetesgateway)
 │
 ├── argocd-app.yaml              # Application ArgoCD (GitOps)
 └── README.md
@@ -94,14 +99,14 @@ L'architecture comprend un API Gateway comme point d'entrée unique et plusieurs
 
 ## Flux de Connexion
 
-1. L'utilisateur soumet le formulaire de login/signup
-2. Le gateway reçoit la requête et appelle l'auth-service via API REST
-3. L'auth-service vérifie les identifiants et retourne les données utilisateur en JSON
-4. Le gateway définit la session utilisateur dans Redis
-5. Le gateway transmet les infos utilisateur au frontend via des headers (`x-user-id`, `x-user-name`, `x-user-role`)
+1. L'utilisateur soumet le formulaire de login/signup (`POST /login`, `/signup`)
+2. L'API Gateway (Traefik, HTTPRoute) route la requête vers l'auth-service (chemin préservé)
+3. L'auth-service vérifie les identifiants et définit la session utilisateur dans Redis (`Set-Cookie`)
+4. À chaque requête des pages/APIs, le middleware **ForwardAuth** de Traefik appelle `GET /auth/session`
+5. Si la session est valide, l'auth-service renvoie les en-têtes `x-user-id`, `x-user-name`, `x-user-role` que Traefik copie vers le backend
 6. Le frontend lit ces headers et affiche l'interface connectée
 
-### Headers transmis par le Gateway
+### Headers transmis par ForwardAuth
 
 | Header | Description |
 |--------|-------------|
@@ -130,7 +135,7 @@ Le projet utilise un pipeline CI/CD complet sur **GitHub Actions** avec publicat
 
 | Job | Description |
 |-----|-------------|
-| `lint` | Linting ESLint sur auth-service, user-service, gateway-service |
+| `lint` | Linting ESLint sur auth-service, user-service, course-service |
 | `test` | Tests Jest avec couverture de code et rapports JUnit |
 | `security` | Audit npm (`npm audit`) sur chaque service |
 | `build-push` | Build et push des images Docker vers GHCR avec tag `sha` + `latest` |
@@ -142,7 +147,7 @@ Les images sont publiées sur `ghcr.io/cyber-pnl/k8sproject/` :
 
 - `ghcr.io/cyber-pnl/k8sproject/auth-service:latest`
 - `ghcr.io/cyber-pnl/k8sproject/user-service:latest`
-- `ghcr.io/cyber-pnl/k8sproject/gateway-service:latest`
+- `ghcr.io/cyber-pnl/k8sproject/course-service:latest`
 - `ghcr.io/cyber-pnl/k8sproject/frontend-service:latest`
 
 ### Déclenchement
@@ -250,15 +255,17 @@ Les communications entre services sont restreintes via des NetworkPolicies Kuber
 
 ---
 
-## 🌐 Ingress et TLS
+## 🌐 API Gateway et TLS
 
-Le projet utilise **Traefik** comme Ingress Controller avec **cert-manager** pour les certificats TLS automatiques (Let's Encrypt).
+Le projet utilise **Traefik** comme API Gateway (Kubernetes Gateway API) avec **cert-manager** pour les certificats TLS automatiques (Let's Encrypt).
 
 ### Composants Infrastructure
 
 | Fichier | Description |
 |---------|-------------|
-| `infra/traefik.yaml` | Ingress Controller Traefik |
+| `cluster/traefik-gateway.yaml` | HelmChartConfig Traefik (provider `kubernetesgateway`) |
+| `k8s/network-gateway.yaml` | Gateway (listeners web/websecure) |
+| `k8s/http-routes.yaml` | HTTPRoute (routage + ForwardAuth) |
 | `infra/cert-manager.yaml` | Gestionnaire de certificats TLS |
 | `infra/cluster-issuer.yaml` | Émetteur Let's Encrypt |
 | `infra/install-argocd.yaml` | Installation ArgoCD |
@@ -280,7 +287,7 @@ Le projet utilise **Traefik** comme Ingress Controller avec **cert-manager** pou
 # Avec Docker standard (développement local)
 docker build -t auth-service:latest ./services/auth-service
 docker build -t user-service:latest ./services/user-service
-docker build -t gateway-service:latest ./services/gateway-service
+docker build -t course-service:latest ./services/course-service
 docker build -t frontend-service:latest ./services/frontend-service
 
 # Avec Minikube
@@ -304,8 +311,8 @@ kubectl apply -f k8s/
 # 3. Vérifier les pods
 kubectl get pods -w
 
-# 4. Accéder au Gateway
-minikube service gateway-service
+# 4. Accéder au site
+kubectl get svc traefik -n kube-system   # LoadBalancer (ports 80/443)
 ```
 
 ---
@@ -342,6 +349,7 @@ minikube service gateway-service
 | `POSTGRES_DB` | kubelearn | Nom de la base (depuis postgres-secret) |
 | `REDIS_URL` | redis://redis-service:6379 | URL Redis |
 | `SESSION_SECRET` | - | Secret de session (depuis app-secret) |
+| `COOKIE_SECURE` | true | Cookie de session Secure (false en dev local) |
 
 ### User Service
 
@@ -360,10 +368,10 @@ minikube service gateway-service
 ### Voir les logs
 
 ```bash
-kubectl logs -f deployment/gateway-service
 kubectl logs -f deployment/auth-service
 kubectl logs -f deployment/user-service
 kubectl logs -f deployment/frontend-service
+kubectl logs -f deployment/traefik -n kube-system   # API Gateway (routage, ForwardAuth)
 ```
 
 ### Redémarrer un service
@@ -392,7 +400,7 @@ kubectl describe application kubelearn-app -n argocd
 Chaque service dispose de tests unitaires et d'intégration avec Jest :
 
 ```bash
-# Auth Service
+# Auth Service (sessions + ForwardAuth)
 cd services/auth-service
 npm install
 npm run test:coverage
@@ -402,8 +410,8 @@ cd services/user-service
 npm install
 npm run test:coverage
 
-# Gateway Service
-cd services/gateway-service
+# Course Service
+cd services/course-service
 npm install
 npm run test:coverage
 ```
@@ -412,9 +420,9 @@ npm run test:coverage
 
 ##  Notes Importantes
 
-- **Gateway unique source de vérité** : Seul le Gateway gère les sessions utilisateur (`req.session.user`)
-- **Frontend sans session propre** : Le Frontend Service lit les infos utilisateur depuis les headers HTTP transmis par le Gateway
-- **Auth Service stateless** : L'Auth Service ne fait que vérifier les identifiants et retourner des données JSON
+- **Sessions** : L'auth-service est la source de vérité des sessions (Redis), via l'API Gateway Kubernetes (ex-gateway-service supprimé)
+- **Frontend sans session propre** : Le Frontend Service lit les infos utilisateur depuis les headers HTTP `x-user-*` injectés par le ForwardAuth de Traefik
+- **Auth Service** : vérifie les identifiants, gère les sessions et répond sur `GET /auth/session` (cible ForwardAuth)
 - **Images GHCR** : Les manifests K8s pointent vers `ghcr.io/cyber-pnl/k8sproject/...` pour le déploiement via ArgoCD
 - **Auto-delivery** : Le job `delivery` de la CI met à jour automatiquement les tags d'images dans les manifests K8s
 - **Skip CI** : Les commits de delivery incluent `[skip ci]` pour éviter les boucles infinies

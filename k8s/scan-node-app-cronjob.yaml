@@ -16,8 +16,7 @@ spec:
               - image
               - ghcr.io/cyber-pnl/k8sproject/frontend-service:latest
               - ghcr.io/cyber-pnl/k8sproject/auth-service:latest
-              - ghcr.io/cyber-pnl/k8sproject/user-service:latest 
-              - ghcr.io/cyber-pnl/k8sproject/gateway-service:latest
+              - ghcr.io/cyber-pnl/k8sproject/user-service:latest
 
           restartPolicy: Never
       backoffLimit: 2

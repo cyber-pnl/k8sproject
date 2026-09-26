@@ -36,4 +36,4 @@ KubeLearn est déployé via **GitOps** : aucune action manuelle sur le cluster n
 - **Ne jamais modifier `k8s/*.yaml` dans l'UI du cluster** : self-heal écraserait. Toute modif passe par git.
 - Ne pas commenter le commit `delivery` généré par la CI (il est authentique et nécessaire).
 - Si un pod reste en `CreateContainerConfigError`, c'est un Secret manquant — pas un problème de code.
-- Le check final côté serveur : le pod gateway doit exécuter le code avec les nouveaux logs de proxy (marqueurs `🔍 [PROXY /]` / `✅` / `❌` présents dans `services/gateway-service/index.js`).
+- Le check final côté serveur : l'auth-service doit exécuter le code avec les nouveaux logs (`Auth Service running on port 3001`, `Session store ready (Redis)`) présents dans `services/auth-service/index.js`. Le routage se vérifie via le Gateway : `kubectl get gateway kubelearn-gateway` (listeners `Accepted=True`) et `kubectl get httproute kubelearn-routes`.
