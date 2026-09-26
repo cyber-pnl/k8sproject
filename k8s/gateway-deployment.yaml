@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: gateway-service
-          image: ghcr.io/cyber-pnl/k8sproject/gateway-service:a1c1bf4c1079350faa27f007e7a103f1454aab80
+          image: ghcr.io/cyber-pnl/k8sproject/gateway-service:e39472322dd0fcf3f077079b856cc01f3fce4f20
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
