@@ -3,19 +3,20 @@ kind: Gateway
 metadata:
   name: kubelearn-gateway
   namespace: default
-  annotations:
-    traefik.io/entrypoints: web,websecure
 spec:
   gatewayClassName: traefik
   listeners:
+    # Ports = ports des entrypoints Traefik (web=8000, websecure=8443 côté k3s) :
+    # la doc Gateway API Traefik exige que les ports des listeners correspondent
+    # aux ports des entrypoints. L'équilibreur de charge externe expose 80/443.
     - name: web
-      port: 80
+      port: 8000
       protocol: HTTP
       allowedRoutes:
         namespaces:
           from: Same
     - name: websecure
-      port: 443
+      port: 8443
       protocol: HTTPS
       hostname: kubelearn.duckdns.org
       tls:
