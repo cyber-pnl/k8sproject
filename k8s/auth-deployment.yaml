@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: auth-service
-          image: ghcr.io/cyber-pnl/k8sproject/auth-service:e710b1e16519601bf849e24f86ae3f815f4db821
+          image: ghcr.io/cyber-pnl/k8sproject/auth-service:0fa4f8338f8fa0c62c667ce232ffa0fdcd4f8a4b
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3001
