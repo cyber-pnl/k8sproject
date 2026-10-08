@@ -10,36 +10,23 @@ L'architecture comprend un API Gateway comme point d'entrée unique et plusieurs
 
 ### Diagramme de l'Architecture
 
-```
-                                    ┌─────────────────────────────────────┐
-                                    │         Ingress (Traefik)           │
-                                    │         HTTPS / HTTP :80            │
-                                    └─────────────────┬───────────────────┘
-                                                      │
-                                    ┌─────────────────▼───────────────────┐
-                                    │         Gateway Service             │
-                                    │            (Port 3000)              │
-                                    │   Point d'entrée, gestion session   │
-                                    │         LoadBalancer                │
-                                    └─────────────────┬───────────────────┘
-                                                      │
-                          ┌───────────────────────────┼───────────────────────────┐
-                          │                           │                           │
-                 ┌────────▼────────┐        ┌────────▼─────────┐        ┌───────▼─────────┐
-                 │  Auth Service   │        │  Frontend Service│        │  User Service    │
-                 │   (Port 3001)   │        │   (Port 3003)    │        │   (Port 3002)    │
-                 │ Authentification│        │   Rendu EJS      │        │Gestion utilisateurs│
-                 └────────┬────────┘        └────────┬─────────┘        └────────┬─────────┘
-                          │                          │                           │
-                          └──────────────────────────┼───────────────────────────┘
-                                                   │
-                    ┌──────────────────────────────┴──────────────────────────────┐
-                    │                                                           │
-           ┌────────▼─────────┐                                     ┌────────────▼────────┐
-           │    PostgreSQL    │                                     │       Redis         │
-           │    (Port 5432)   │                                     │     (Port 6379)     │
-           │   Base de données│                                     │  Sessions & Cache   │
-           └──────────────────┘                                     └─────────────────────┘
+```mermaid
+flowchart TD
+    User["👤 Utilisateur\n(HTTPS : kubelearn.duckdns.org)"] --> Traefik["Traefik Gateway API\n(80/443)"]
+
+    Traefik -->|ForwardAuth GET /auth/session| Auth
+    Traefik --> Frontend
+    Traefik --> UserSvc
+    Traefik --> CourseSvc
+
+    Auth["Auth Service\n(3001)\nSessions Redis\nForwardAuth target"] --> Redis["Redis\n(6379)\nSessions"]
+    Auth --> PG["PostgreSQL\n(5432)\nUsers"]
+
+    UserSvc["User Service\n(3002)"] --> PG
+    CourseSvc["Course Service\n(3004)\nS3 + Markdown"] --> PG
+    CourseSvc --> Redis
+
+    Frontend["Frontend Service\n(3003)\nEJS\nlit x-user-*"] -->|x-user-id/name/role via headers| User
 ```
 
 ### Services
@@ -58,7 +45,7 @@ L'architecture comprend un API Gateway comme point d'entrée unique et plusieurs
 
 ## Structure du Projet
 
-```
+```text
 ├── .github/workflows/
 │   └── CI.yml                    # Pipeline CI/CD complète
 │
@@ -118,13 +105,12 @@ Le projet utilise un pipeline CI/CD complet sur **GitHub Actions** avec publicat
 
 ### Pipeline CI
 
-```
-┌─────────┐    ┌─────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
-│  Lint   │ -> │  Tests  │ -> │ Security │ -> │ Build &  │ -> │ Delivery │
-│         │    │Coverage │    │  Scan    │    │  Push    │    │  (K8s)   │
-│ 3 svcs  │    │ 3 svcs  │    │ 3 svcs   │    │ 4 images │    │ 4 svcs   │
-│         │    │         │    │          │    │  GHCR    │    │  Git     │
-└─────────┘    └─────────┘    └──────────┘    └──────────┘    └──────────┘
+```mermaid
+flowchart LR
+    A[Lint 4 svcs] --> B[Tests + Coverage 4 svcs]
+    B --> C[Security Scan 4 svcs]
+    C --> D[Build & Push 4 images\nGHCR]
+    D --> E[Delivery: mise à jour tags K8s\ncommit chore [skip ci]]
 ```
 
 ### Jobs du workflow
