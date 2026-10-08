@@ -162,12 +162,13 @@ jobs:
           REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           IMAGE_BASE="${{ env.REGISTRY }}/${REPO_LOWER}"
           
-          # Mise à jour de chaque fichier YAML dans ton dossier /k8s
+          # Mise à jour de chaque fichier YAML consolidé dans ton dossier /k8s
+          # (Deployment + Service dans un même fichier, ex: k8s/user-service.yaml)
           # On remplace l'image existante par celle avec le nouveau SHA du commit
-          sed -i "s|image: ${IMAGE_BASE}/auth-service:.*|image: ${IMAGE_BASE}/auth-service:${{ github.sha }}|g" k8s/auth-deployment.yaml
-          sed -i "s|image: ${IMAGE_BASE}/frontend-service:.*|image: ${IMAGE_BASE}/frontend-service:${{ github.sha }}|g" k8s/frontend-deployment.yaml
-          sed -i "s|image: ${IMAGE_BASE}/user-service:.*|image: ${IMAGE_BASE}/user-service:${{ github.sha }}|g" k8s/user-deployment.yaml
-          sed -i "s|image: ${IMAGE_BASE}/course-service:.*|image: ${IMAGE_BASE}/course-service:${{ github.sha }}|g" k8s/course-deployment.yaml
+          sed -i "s|image: ${IMAGE_BASE}/auth-service:.*|image: ${IMAGE_BASE}/auth-service:${{ github.sha }}|g" k8s/auth-service.yaml
+          sed -i "s|image: ${IMAGE_BASE}/frontend-service:.*|image: ${IMAGE_BASE}/frontend-service:${{ github.sha }}|g" k8s/frontend-service.yaml
+          sed -i "s|image: ${IMAGE_BASE}/user-service:.*|image: ${IMAGE_BASE}/user-service:${{ github.sha }}|g" k8s/user-service.yaml
+          sed -i "s|image: ${IMAGE_BASE}/course-service:.*|image: ${IMAGE_BASE}/course-service:${{ github.sha }}|g" k8s/course-service.yaml
 
       - name: Commit and Push Changes
         run: |

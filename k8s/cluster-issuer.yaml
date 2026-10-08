@@ -1,0 +1,17 @@
+# Émetteur ACME Let's Encrypt pour le certificat TLS de kubelearn.duckdns.org
+# (voir k8s/certificate.yaml). Copie conforme de la définition appliquée au
+# bootstrap (terraform/modules/ec2/k3s-user-data.sh) pour un adoption sans drift.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: bricelaplaine28@gmail.com
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    solvers:
+      - http01:
+          ingress:
+            ingressClassName: traefik

@@ -1,3 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-script
+data:
+  init.sh: |
+    #!/bin/bash
+    set -e
+
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(100) UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        role VARCHAR(20) NOT NULL DEFAULT 'user',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      INSERT INTO users (username, password, role)
+      VALUES (
+        'admin',
+        '$ADMIN_HASHED_PASSWORD',
+        'admin'
+      )
+      ON CONFLICT (username) DO NOTHING;
+    EOSQL
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -46,3 +73,15 @@ spec:
         resources:
           requests:
             storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+spec:
+  type: ClusterIP
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432

@@ -21,7 +21,7 @@ KubeLearn est déployé via **GitOps** : aucune action manuelle sur le cluster n
    | `test` | Jest + coverage par service (auth, user, gateway) |
    | `security` | `npm audit --audit-level=moderate` |
    | `build-push` | images GHCR `ghcr.io/cyber-pnl/k8sproject/<service>:<sha>` |
-   | `delivery` | commit `chore: update images to <sha> [skip ci]` qui met à jour `k8s/*-deployment.yaml` |
+   | `delivery` | commit `chore: update images to <sha> [skip ci]` qui met à jour les tags dans `k8s/*-service.yaml` (fichiers consolidés Deployment + Service) |
 
 3. **ArgoCD** (`argocd-app.yaml`) est en auto-sync/selfHeal/prune sur le dossier `k8s/` du repo (branche `main`, HEAD). Dès que `delivery` a poussé les nouveaux tags, ArgoCD redéploie les pods (RollingUpdate).
 

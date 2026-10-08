@@ -68,28 +68,24 @@ L'architecture comprend un API Gateway comme point d'entrée unique et plusieurs
 │   ├── user-service/            # Service Utilisateurs (port 3002)
 │   └── course-service/          # Service Cours (port 3004)
 │
-├── k8s/                          # Manifests Kubernetes (GitOps via ArgoCD)
-│   ├── auth-deployment.yaml     # Déploiement Auth Service
-│   ├── auth-service.yaml        # Service Auth
-│   ├── frontend-deployment.yaml # Déploiement Frontend
-│   ├── frontend-service.yaml    # Service Frontend
-│   ├── user-deployment.yaml     # Déploiement User Service
-│   ├── user-service.yaml        # Service User
-│   ├── course-deployment.yaml   # Déploiement Course Service
-│   ├── course-service.yaml      # Service Course
-│   ├── network-gateway.yaml     # Gateway (Kubernetes Gateway API / Traefik)
-│   ├── http-routes.yaml         # HTTPRoute de routage + ForwardAuth
+├── k8s/                          # Manifests Kubernetes (GitOps via ArgoCD, tout dans ce dossier)
+│   ├── auth-service.yaml         # Auth : Deployment + Service
+│   ├── user-service.yaml         # User : Deployment + Service
+│   ├── course-service.yaml       # Course : Deployment + Service
+│   ├── frontend-service.yaml     # Frontend : Deployment + Service
+│   ├── postgres.yaml             # PostgreSQL : ConfigMap + StatefulSet + Service
+│   ├── redis.yaml                # Redis : Deployment + Service
+│   ├── network-gateway.yaml      # Gateway (Kubernetes Gateway API / Traefik)
+│   ├── http-routes.yaml          # HTTPRoute de routage + ForwardAuth
 │   ├── middleware-forward-auth.yaml # ForwardAuth (injection x-user-*)
-│   ├── certificate.yaml         # Certificat TLS (cert-manager)
-│   ├── postgres-*.yaml          # PostgreSQL (StatefulSet + ConfigMap)
-│   ├── redis-*.yaml             # Redis (Deployment + Service)
+│   ├── certificate.yaml          # Certificat TLS (cert-manager)
+│   ├── cluster-issuer.yaml       # ClusterIssuer Let's Encrypt
+│   ├── traefik-gateway.yaml      # HelmChartConfig Traefik (provider kubernetesgateway)
 │   └── scan-node-app-cronjob.yaml # Scan sécurité Trivy
 │
-├── infra/                        # Infrastructure K8s (appliquée à la main)
-│   ├── install-argocd.yaml      # Configuration ArgoCD
-│   ├── cert-manager.yaml        # Gestionnaire de certificats TLS
-│   ├── cluster-issuer.yaml      # Émetteur de certificats Let's Encrypt
-│   └── traefik-gateway.yaml     # HelmChartConfig Traefik (provider kubernetesgateway)
+├── infra/                        # Bootstrap ArgoCD + cert-manager (appliqué à la main, HORS app ArgoCD)
+│   ├── install-argocd.yaml      # Installation ArgoCD
+│   └── cert-manager.yaml        # Installation cert-manager
 │
 ├── argocd-app.yaml              # Application ArgoCD (GitOps)
 └── README.md
@@ -263,12 +259,12 @@ Le projet utilise **Traefik** comme API Gateway (Kubernetes Gateway API) avec **
 
 | Fichier | Description |
 |---------|-------------|
-| `cluster/traefik-gateway.yaml` | HelmChartConfig Traefik (provider `kubernetesgateway`) |
+| `k8s/traefik-gateway.yaml` | HelmChartConfig Traefik (provider `kubernetesgateway`) |
 | `k8s/network-gateway.yaml` | Gateway (listeners web/websecure) |
 | `k8s/http-routes.yaml` | HTTPRoute (routage + ForwardAuth) |
-| `infra/cert-manager.yaml` | Gestionnaire de certificats TLS |
-| `infra/cluster-issuer.yaml` | Émetteur Let's Encrypt |
-| `infra/install-argocd.yaml` | Installation ArgoCD |
+| `k8s/cluster-issuer.yaml` | ClusterIssuer Let's Encrypt |
+| `infra/cert-manager.yaml` | Installation cert-manager (bootstrap) |
+| `infra/install-argocd.yaml` | Installation ArgoCD (bootstrap) |
 
 ---
 
